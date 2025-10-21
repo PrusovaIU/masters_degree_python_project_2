@@ -10,22 +10,37 @@ class DatabaseError(Exception):
 
 
 class DBObjectParseJsonError(DatabaseError):
+    """
+    Базовый класс для ошибок, связанных с парсингом json описания объекта.
+    """
     pass
 
 
 class JsonTagAbsentError(DatabaseError):
+    """
+    Ошибка, возникающая при отсутствии тега в json описании объекта.
+    """
     pass
 
 
 class JsonValueError(DatabaseError):
+    """
+    Ошибка, возникающая при некорректном значении тега в json описании объекта.
+    """
     pass
 
 
 class DuplicateNameError(JsonValueError):
+    """
+    Ошибка, возникающая при наличии дубликатов имен объектов.
+    """
     pass
 
 
 class DBObjectJsonTag(Enum):
+    """
+    Теги, используемые для описания объектов базы данных в json.
+    """
     name = "name"
 
 
@@ -197,6 +212,29 @@ class DBObject(BaseDBObject):
         """
         return []
 
+    @staticmethod
+    def _check_duplicates(
+            objs: list[BaseDBObject],
+            obj: IncludedObject,
+            json_data: list
+    ) -> None:
+        """
+        Проверка на дубликаты имен объектов.
+
+        :param objs: список объектов.
+        :param obj: описание объекта.
+        :param json_data: json описание объектов.
+        :return: None.
+        """
+        name_counts = Counter(obj.name for obj in objs)
+        duplicates = [name for name, count in name_counts.items() if count > 1]
+        if duplicates:
+            raise DuplicateNameError(
+                f"Tag \"{obj.json_tag}\" must not contain duplicates: "
+                f"{dumps(json_data)}"
+            )
+
+
     @classmethod
     def _list_included_objs(
             cls,
@@ -226,13 +264,7 @@ class DBObject(BaseDBObject):
                 f"Tag \"{obj.json_tag}\" must not be empty: {dumps(json_data)}"
             )
         objs = [obj.type.from_json(item) for item in json_data]
-        name_counts = Counter(obj.name for obj in objs)
-        duplicates = [name for name, count in name_counts.items() if count > 1]
-        if duplicates:
-            raise DuplicateNameError(
-                f"Tag \"{obj.json_tag}\" must not contain duplicates: "
-                f"{dumps(json_data)}"
-            )
+        cls._check_duplicates(objs, obj, json_data)
         return objs
 
     @classmethod
