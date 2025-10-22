@@ -155,6 +155,20 @@ class BaseDBObject:
             )
         return cls(name, **kwargs)
 
+    def to_json(self) -> dict:
+        """
+        Формирование словаря с описанием объекта.
+
+        :return: описание объекта.
+        """
+        params = {
+            param.json_tag: getattr(self, param.kwarg_name, None)
+            for param in self.parameters()
+        }
+        params[DBObjectJsonTag.name.value] = self._name
+        return params
+
+
 
 class IncludedObject(DBObjectParam):
     """
@@ -304,3 +318,11 @@ class DBObject(BaseDBObject):
         kwargs = super()._parse_kwargs(json_data)
         kwargs.update(cls._parse_included_objs(json_data))
         return kwargs
+
+    def to_json(self) -> dict:
+        params = super().to_json()
+        for obj in self.included_objs():
+            params[obj.json_tag] = [
+                i.to_json() for i in getattr(self, obj.kwarg_name, [])
+            ]
+        return params

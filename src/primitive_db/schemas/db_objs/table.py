@@ -18,7 +18,7 @@ class Table(DBObject):
         self._columns = columns
 
     def __str__(self):
-        columns = "\n".join([column.name for column in self._columns])
+        columns = ", ".join([column.name for column in self._columns])
         return f"<Table {self._name}: {columns}>"
 
     @property
