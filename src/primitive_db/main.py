@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from engine import welcome
-from schemas.db_objs.database import Database
+from src.primitive_db.db_objs.database import Database
 
 
 def main():
@@ -42,3 +42,7 @@ if __name__ == "__main__":
         }
     )
     print(db)
+    from json import dumps
+    a = db.to_json()
+    print(dumps(a, indent=3))
+    print(Database.from_json(a))

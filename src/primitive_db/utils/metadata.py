@@ -1,5 +1,4 @@
 from pathlib import Path
-from src.primitive_db.schemas.db_meta import Database
 from json import load, JSONDecodeError, dump
 
 
@@ -11,7 +10,7 @@ class MetadataFileError(GetMetadataError):
     pass
 
 
-def load_metadata(filepath: Path) -> Database:
+def load_metadata(filepath: Path) -> dict:
     """
     Загрузка метаданных о базе данных.
 
@@ -40,6 +39,7 @@ def save_metadata(filepath: Path, data: dict) -> None:
     :param filepath: путь до файла с метаданными.
     :param data: метаданные.
     :return: None.
+
     :raises MetadataFileError: если не удалось сохранить метаданные.
     """
     try:
