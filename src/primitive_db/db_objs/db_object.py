@@ -30,7 +30,7 @@ class JsonValueError(DatabaseError):
     pass
 
 
-class DuplicateNameError(JsonValueError):
+class DuplicatesError(JsonValueError):
     """
     Ошибка, возникающая при наличии дубликатов имен объектов.
     """
@@ -228,25 +228,17 @@ class DBObject(BaseDBObject):
 
     @staticmethod
     def _check_duplicates(
-            objs: list[BaseDBObject],
-            obj: IncludedObject,
-            json_data: list
-    ) -> None:
+            objs: list[BaseDBObject]
+    ) -> bool:
         """
         Проверка на дубликаты имен объектов.
 
         :param objs: список объектов.
-        :param obj: описание объекта.
-        :param json_data: json описание объектов.
-        :return: None.
+        :return: True, если есть дубликаты имен объектов, иначе False.
         """
         name_counts = Counter(obj.name for obj in objs)
         duplicates = [name for name, count in name_counts.items() if count > 1]
-        if duplicates:
-            raise DuplicateNameError(
-                f"Tag \"{obj.json_tag}\" must not contain duplicates: "
-                f"{dumps(json_data)}"
-            )
+        return len(duplicates) > 0
 
 
     @classmethod
@@ -265,7 +257,7 @@ class DBObject(BaseDBObject):
         :raises JsonValueError: если в json_data некорректное значение
             какого-либо тега.
 
-        :raises DuplicateNameError: если в json_data есть сущности с одинаковым
+        :raises DuplicatesError: если в json_data есть сущности с одинаковым
             именем.
         """
         if not isinstance(json_data, list):
@@ -278,7 +270,11 @@ class DBObject(BaseDBObject):
                 f"Tag \"{obj.json_tag}\" must not be empty: {dumps(json_data)}"
             )
         objs = [obj.type.from_json(item) for item in json_data]
-        cls._check_duplicates(objs, obj, json_data)
+        if cls._check_duplicates(objs):
+            raise DuplicatesError(
+                f"Tag \"{obj.json_tag}\" must not contain duplicates: "
+                f"{dumps(json_data)}"
+            )
         return objs
 
     @classmethod
