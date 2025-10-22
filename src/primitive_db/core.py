@@ -15,23 +15,41 @@ def _create_columns(columns: list[str]) -> list[Column]:
 
 
 def create_table(
-        metadata: Database,
+        database: Database,
         table_name: str,
         columns: list[str]
 ) -> None:
     """
     Обработка команды создания таблицы.
 
-    :param metadata: описание базы данных.
+    :param database: описание базы данных.
     :param table_name: имя таблицы.
     :param columns: список строк с описанием колонок вида имя:тип.
 
     :return: None.
 
     :raises db_objs.db_object.DatabaseError: если не удалось создать таблицу.
+
+    :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
     """
     column_objs = _create_columns(columns)
     table = Table(table_name, column_objs)
-    metadata.add_table(table)
-    save_metadata(CONFIG.db_metadata_path, metadata.to_json())
+    database.add_table(table)
+    save_metadata(CONFIG.db_metadata_path, database.to_json())
 
+
+def drop_table(database: Database, table_name: str) -> None:
+    """
+    Обработка команды удаления таблицы.
+
+    :param database: описание базы данных.
+    :param table_name: имя таблицы.
+
+    :return: None.
+
+    :raises db_objs.db_object.DatabaseError: если не удалось удалить таблицу.
+
+    :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
+    """
+    database.drop_table(table_name)
+    save_metadata(CONFIG.db_metadata_path, database.to_json())

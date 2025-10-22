@@ -17,6 +17,14 @@ class DatabaseObjectExistsError(DatabaseError):
     pass
 
 
+class DatabaseObjectNotFoundError(DatabaseError):
+    """
+    Класс ошибки, возникающей при попытке получить из базы данных объект,
+    который не существует.
+    """
+    pass
+
+
 class Database(DBObject):
     def __init__(self, name: str, tables: Optional[list[Table]] = None):
         super().__init__(name)
@@ -56,3 +64,19 @@ class Database(DBObject):
                 f"Table {table.name} already exists"
             )
         self._tables.append(table)
+
+    def drop_table(self, table_name: str) -> None:
+        """
+        Удаление таблицы из базы данных.
+
+        :param table_name: имя таблицы.
+        :return: None.
+        """
+        tables = [t for t in self._tables if t.name == table_name]
+        try:
+            table = tables[0]
+            self._tables.remove(table)
+        except IndexError:
+            raise DatabaseObjectNotFoundError(
+                f"Table {table_name} not found"
+            )

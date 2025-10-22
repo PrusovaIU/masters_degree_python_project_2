@@ -8,6 +8,9 @@ class TableJsonTag(Enum):
 
 
 class TableError(DatabaseError):
+    """
+    Класс ошибок, возникающих при работе с таблицами.
+    """
     pass
 
 
