@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Optional
 
+from pkg_resources import require
+
 from .db_object import DBObject, IncludedObject, DatabaseError
 from .table import Table
 
@@ -26,28 +28,35 @@ class DatabaseObjectNotFoundError(DatabaseError):
 
 
 class Database(DBObject):
-    def __init__(self, name: str, tables: Optional[list[Table]] = None):
-        super().__init__(name)
-        self._tables = tables if tables is not None else []
+    tables = IncludedObject(
+        DatabaseJsonTag.tables.value,
+        Table,
+        False
+    )
+
+
+    # def __init__(self, name: str, tables: Optional[list[Table]] = None):
+    #     super().__init__(name)
+    #     self._tables = tables if tables is not None else []
 
     def __str__(self):
         tables = ", ".join([t.name for t in self.tables])
         return f"<Database {self._name}: {tables}>"
 
-    @property
-    def tables(self) -> list[Table]:
-        return self._tables
+    # @property
+    # def tables(self) -> list[Table]:
+    #     return self._tables
 
-    @classmethod
-    def included_objs(cls) -> list[IncludedObject]:
-        return [
-            IncludedObject(
-                "tables",
-                DatabaseJsonTag.tables.value,
-                Table,
-                False
-            )
-        ]
+    # @classmethod
+    # def included_objs(cls) -> list[IncludedObject]:
+    #     return [
+    #         IncludedObject(
+    #             "tables",
+    #             DatabaseJsonTag.tables.value,
+    #             Table,
+    #             False
+    #         )
+    #     ]
 
     def add_table(self, table: Table) -> None:
         """

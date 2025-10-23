@@ -47,6 +47,7 @@ class DBObjectJsonTag(Enum):
 T = TypeVar("T")
 
 
+# Не стала использовать pydantic, т.к. его нет в условиях задания:
 @dataclass
 class DBObjectParam:
     """
@@ -57,7 +58,6 @@ class DBObjectParam:
     :param type: тип параметра.
     :param required: является ли параметр обязательным.
     """
-    kwarg_name: str
     json_tag: str
     type: Type
     required: bool
@@ -69,34 +69,21 @@ class BaseDBObject:
 
     :param name: Название объекта.
     """
-    def __init__(self, name: str, *args, **kwargs):
+    def __init__(self, name: str, **kwargs):
         self._name = name
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
     @property
     def name(self) -> str:
         return self._name
 
     @classmethod
-    def parameters(cls) -> list[DBObjectParam]:
-        """
-        Переопределите данный метод, чтобы указать параметры, которые должны
-        быть получены из json описания объекта.
-
-        Пример:
-        [
-            DBObjectParam("name", "name", str, True),
-            DBObjectParam("age", "age", int, False)
-        ]
-
-        Ожидаемый json описания объекта:
-        {
-            "name": "John",
-            "age": 25
+    def parameters(cls) -> dict[str, DBObjectParam]:
+        return {
+            name: param for name, param in cls.__dict__.items()
+            if isinstance(param, DBObjectParam)
         }
-
-        :return: список описаний параметров.
-        """
-        return []
 
     @classmethod
     def _parse_kwargs(cls, json_data: dict) -> dict[str, Any]:
@@ -115,14 +102,14 @@ class BaseDBObject:
         """
         kwargs = {}
         try:
-            for param in cls.parameters():
+            for name, param in cls.parameters().items():
                 if param.json_tag not in json_data and param.required:
                     raise JsonTagAbsentError(
                         f"There is no tag \"{param.json_tag}\" in json data: "
                         f"{dumps(json_data)}"
                     )
                 value = json_data.get(param.json_tag)
-                kwargs[param.kwarg_name] = param.type(value)
+                kwargs[name] = param.type(value)
         except ValueError:
             raise JsonValueError(
                 f"Tag \"{param.json_tag}\" must be a {param.type.__name__}: "
@@ -162,12 +149,11 @@ class BaseDBObject:
         :return: описание объекта.
         """
         params = {
-            param.json_tag: getattr(self, param.kwarg_name, None)
-            for param in self.parameters()
+            param.json_tag: getattr(self, name, None)
+            for name, param in self.parameters().items()
         }
         params[DBObjectJsonTag.name.value] = self._name
         return params
-
 
 
 class IncludedObject(DBObjectParam):
@@ -188,43 +174,11 @@ class DBObject(BaseDBObject):
 
     """
     @classmethod
-    def included_objs(cls) -> list[IncludedObject]:
-        """
-        Переопределите данный метод, чтобы указать список сущностей, включенных
-        в данный объект.
-
-        Пример:
-        [
-            IncludedObject("columns", "columns", Column, True)
-        ]
-
-        где Column - класс, описывающий колонку таблицы и имеющий json
-        описание типа:
-        {
-            "name": "id",
-            "type": "int"
-        }.
-
-        Ожидаемый json описания объекта:
-
-        {
-            "columns": [
-                [
-                        {
-                            "name": "id",
-                            "type": "int"
-                        },
-                        {
-                            "name": "name",
-                            "type": "str"
-                        }
-                ]
-            ]
+    def included_objs(cls) -> dict[str, IncludedObject]:
+        return {
+            name: obj for name, obj in cls.__dict__.items()
+            if isinstance(obj, IncludedObject)
         }
-
-        :return: список описаний объектов.
-        """
-        return []
 
     @staticmethod
     def _check_duplicates(
@@ -290,7 +244,7 @@ class DBObject(BaseDBObject):
             json описания.
         """
         objects = {}
-        for obj in cls.included_objs():
+        for name, obj in cls.included_objs().items():
             if obj.json_tag not in json_data and obj.required:
                 raise JsonTagAbsentError(
                     f"There is no tag \"{obj.json_tag}\" in json data: "
@@ -298,8 +252,7 @@ class DBObject(BaseDBObject):
                 )
             tag_value = json_data.get(obj.json_tag)
             if tag_value is not None:
-                objects[obj.kwarg_name] = \
-                    cls._list_included_objs(tag_value, obj)
+                objects[name] = cls._list_included_objs(tag_value, obj)
         return objects
 
     @classmethod
@@ -317,8 +270,8 @@ class DBObject(BaseDBObject):
 
     def to_json(self) -> dict:
         params = super().to_json()
-        for obj in self.included_objs():
+        for name, obj in self.included_objs().items():
             params[obj.json_tag] = [
-                i.to_json() for i in getattr(self, obj.kwarg_name, [])
+                i.to_json() for i in getattr(self, name, [])
             ]
         return params
