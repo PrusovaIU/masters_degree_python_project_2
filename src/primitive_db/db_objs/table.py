@@ -1,5 +1,5 @@
 from enum import Enum
-from .db_object import DBObject, IncludedObject, DatabaseError, DuplicatesError
+from .db_object import DatabaseError, Model, Field
 from .column import Column
 
 
@@ -14,12 +14,8 @@ class TableError(DatabaseError):
     pass
 
 
-class Table(DBObject):
-    columns = IncludedObject(
-        TableJsonTag.columns.value,
-        Column,
-        True
-    )
+class Table(Model):
+    columns: list[Column] = Field(list[Column], required=True)
     # def __init__(self, name: str, columns: list[Column]):
     #     super().__init__(name)
     #     if self._check_duplicates(columns):
@@ -27,8 +23,8 @@ class Table(DBObject):
     #     self._columns = columns
 
     def __str__(self):
-        columns = ", ".join([column.name for column in self._columns])
-        return f"<Table {self._name}: {columns}>"
+        columns = ", ".join([column.name for column in self.columns])
+        return f"<Table {self.name}: {columns}>"
 
     # @property
     # def columns(self) -> list[Column]:
