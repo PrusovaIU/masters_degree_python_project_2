@@ -1,9 +1,11 @@
+from collections import Counter
 from enum import Enum
 from typing import Optional
 
 from pkg_resources import require
 
-from .db_object import Model, Field, DatabaseError
+from .db_object import Model, Field, DatabaseError, ValidationError
+from .validator import field_validator
 from .table import Table
 
 
@@ -36,6 +38,16 @@ class Database(Model):
     def __str__(self):
         tables = ", ".join([t.name for t in self.tables])
         return f"<Database {self.name}: {tables}>"
+
+    @field_validator("tables")
+    def tables_validator(self, tables: list | None) -> list:
+        name_counts = Counter(obj.name for obj in tables)
+        duplicates = [name for name, count in name_counts.items() if count > 1]
+        if len(duplicates) > 0:
+            raise ValidationError(
+                f"duplicate table names ({', '.join(duplicates)})"
+            )
+        return tables
 
     # @param_validator("tables")
     # def tables_validator(self, tables: list | None) -> list:
