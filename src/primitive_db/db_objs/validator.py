@@ -1,8 +1,10 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar
 
 
-FieldValidatorType = Callable[[Any], Any]
+T = TypeVar('T')
+
+FieldValidatorType = Callable[[T, Any], Any]
 _ClassValidatorsType = dict[str, FieldValidatorType]
 _ValidatorsType = dict[str, _ClassValidatorsType]
 
