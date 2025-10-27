@@ -1,12 +1,4 @@
-from enum import Enum
-from typing import Type, Any
-
 from .db_object import Model, Field, DatabaseError
-
-
-
-class ColumnJsonTag(Enum):
-    type = "type"
 
 
 class ColumnError(DatabaseError):

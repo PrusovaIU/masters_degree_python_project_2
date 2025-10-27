@@ -42,7 +42,7 @@ if __name__ == "__main__":
         }
     )
     print(db)
-    # from json import dumps
-    # a = db.to_json()
-    # print(dumps(a, indent=3))
-    # print(Database.from_json(a))
+    from json import dumps
+    a = db.dumps()
+    print(dumps(a, indent=3))
+    print(Database(**a))

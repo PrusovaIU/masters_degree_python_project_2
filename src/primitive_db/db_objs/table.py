@@ -1,12 +1,7 @@
-from enum import Enum
 from .db_object import DatabaseError, Model, Field, ValidationError
 from .column import Column
 from .validator import field_validator
 from src.primitive_db.utils.duplicates import get_duplicates
-
-
-class TableJsonTag(Enum):
-    columns = "columns"
 
 
 class TableError(DatabaseError):

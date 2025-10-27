@@ -212,3 +212,34 @@ class Model:
                     f"is invalid: {err}"
                 )
         return value
+
+    def dumps(self) -> dict:
+        """
+        Получение словаря с описанием объекта.
+
+        :return: словарь с описанием объекта.
+        """
+        data = {"name": self.name}
+        for name, field in self.fields().items():
+            tag = field.alias or name
+            value = getattr(self, name)
+            if isinstance(value, list):
+                value = [self._dumps_value(item) for item in value]
+            else:
+                value = self._dumps_value(value)
+            data[tag] = value
+        return data
+
+    @staticmethod
+    def _dumps_value(value: Any) -> Any:
+        """
+        Форматирование значения параметра для json.
+
+        :param value: значение параметра.
+        :return: форматированное значение параметра.
+        """
+        if isinstance(value, Model):
+            return value.dumps()
+        else:
+            return value
+

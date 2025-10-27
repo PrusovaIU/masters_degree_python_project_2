@@ -1,14 +1,8 @@
-from collections import Counter
-from enum import Enum
 from src.primitive_db.utils.duplicates import get_duplicates
 
 from .db_object import Model, Field, DatabaseError, ValidationError
 from .validator import field_validator
 from .table import Table
-
-
-class DatabaseJsonTag(Enum):
-    tables = "tables"
 
 
 class DatabaseObjectExistsError(DatabaseError):
