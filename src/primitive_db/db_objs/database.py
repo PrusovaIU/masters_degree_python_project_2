@@ -1,8 +1,6 @@
 from collections import Counter
 from enum import Enum
-from typing import Optional
-
-from pkg_resources import require
+from src.primitive_db.utils.duplicates import get_duplicates
 
 from .db_object import Model, Field, DatabaseError, ValidationError
 from .validator import field_validator
@@ -41,11 +39,10 @@ class Database(Model):
 
     @field_validator("tables")
     def tables_validator(self, tables: list | None) -> list:
-        name_counts = Counter(obj.name for obj in tables)
-        duplicates = [name for name, count in name_counts.items() if count > 1]
-        if len(duplicates) > 0:
+        duplicates = get_duplicates(tables)
+        if duplicates:
             raise ValidationError(
-                f"duplicate table names ({', '.join(duplicates)})"
+                f"duplicate names of tables ({', '.join(duplicates)})"
             )
         return tables
 

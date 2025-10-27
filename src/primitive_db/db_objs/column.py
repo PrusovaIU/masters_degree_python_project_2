@@ -32,23 +32,8 @@ _COLUMN_TYPE = {
 
 
 class Column(Model):
-    # column_type = Field(
-    #     ColumnJsonTag.type.value,
-    #     str,
-    #     True
-    # )
     column_type: str = Field(str, required=True, alias="type")
     column_class: type
-
-    # def __init__(self, name: str, column_type: str):
-    #     super().__init__(name)
-    #     self._type = column_type
-    #     try:
-    #         self._column_class = _COLUMN_TYPE[column_type]
-    #     except KeyError:
-    #         raise ColumnTypeError(
-    #             f"Invalid type \"{column_type}\" for column \"{name}\""
-    #         )
 
     def __str__(self):
         return f"<Column {self.name}: {self.column_type}>"
