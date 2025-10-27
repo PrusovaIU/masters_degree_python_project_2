@@ -1,10 +1,7 @@
-from enum import Enum
-from .db_object import DBObject, IncludedObject, DatabaseError, DuplicatesError
+from .db_object import DatabaseError, Model, Field, ValidationError
 from .column import Column
-
-
-class TableJsonTag(Enum):
-    columns = "columns"
+from .validator import field_validator
+from src.primitive_db.utils.duplicates import get_duplicates
 
 
 class TableError(DatabaseError):
@@ -14,21 +11,21 @@ class TableError(DatabaseError):
     pass
 
 
-class Table(DBObject):
-    columns = IncludedObject(
-        TableJsonTag.columns.value,
-        Column,
-        True
-    )
-    # def __init__(self, name: str, columns: list[Column]):
-    #     super().__init__(name)
-    #     if self._check_duplicates(columns):
-    #         raise DuplicatesError("Cannot create table with duplicate columns")
-    #     self._columns = columns
+class Table(Model):
+    columns: list[Column] = Field(list[Column], required=True)
 
     def __str__(self):
-        columns = ", ".join([column.name for column in self._columns])
-        return f"<Table {self._name}: {columns}>"
+        columns = ", ".join([column.name for column in self.columns])
+        return f"<Table {self.name}: {columns}>"
+
+    @field_validator("columns")
+    def tables_validator(self, columns: list | None) -> list:
+        duplicates = get_duplicates(columns)
+        if duplicates:
+            raise ValidationError(
+                f"duplicate names of columns ({', '.join(duplicates)})"
+            )
+        return columns
 
     # @property
     # def columns(self) -> list[Column]:

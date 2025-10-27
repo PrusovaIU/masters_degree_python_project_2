@@ -1,5 +1,5 @@
 from db_objs import Database, Table
-from db_objs.column import Column, ColumnTypeError
+from db_objs.column import Column
 from utils.metadata import save_metadata
 from conf import CONFIG
 

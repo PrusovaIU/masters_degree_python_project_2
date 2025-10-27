@@ -8,8 +8,8 @@ def main():
     welcome()
 
 if __name__ == "__main__":
-    db = Database.from_json(
-        {
+    db = Database(
+        **{
             "name": "db",
             "tables": [
                 {
@@ -43,6 +43,6 @@ if __name__ == "__main__":
     )
     print(db)
     from json import dumps
-    a = db.to_json()
+    a = db.dumps()
     print(dumps(a, indent=3))
-    print(Database.from_json(a))
+    print(Database(**a))
