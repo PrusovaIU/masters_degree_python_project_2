@@ -1,7 +1,7 @@
-from db_objs import Database, Table
-from db_objs.column import Column
-from utils.metadata import save_metadata
-from conf import CONFIG
+from src.primitive_db.db_objs import Database, Table
+from src.primitive_db.db_objs.column import Column
+from src.primitive_db.utils.metadata import save_metadata
+from src.primitive_db.conf import CONFIG
 
 
 def _create_columns(columns: list[str]) -> list[Column]:
@@ -9,7 +9,7 @@ def _create_columns(columns: list[str]) -> list[Column]:
     for column in columns:
         column_name, column_type = column.split(":")
         column_objs.append(
-            Column(column_name, column_type)
+            Column(column_name.strip(), type=column_type.strip())
         )
     return column_objs
 
@@ -33,9 +33,9 @@ def create_table(
     :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
     """
     column_objs = _create_columns(columns)
-    table = Table(table_name, column_objs)
+    table = Table(table_name, columns=column_objs)
     database.add_table(table)
-    save_metadata(CONFIG.db_metadata_path, database.to_json())
+    save_metadata(CONFIG.db_metadata_path, database.dumps())
 
 
 def drop_table(database: Database, table_name: str) -> None:

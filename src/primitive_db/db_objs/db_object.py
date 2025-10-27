@@ -117,13 +117,13 @@ class Model:
         """
         fields = self.fields()
         for key, field in fields.items():
-            value = self._get_value(key, field, kwargs)
+            value = self._get_kwargs_value(key, field, kwargs)
             setattr(self, key, value)
 
 
-    def _get_value(self, key: str, field: Field, kwargs: dict) -> Any:
+    def _get_kwargs_value(self, key: str, field: Field, kwargs: dict) -> Any:
         """
-        Получение значения параметра.
+        Получение значения параметра из kwargs.
 
         :param key: имя параметра из словаря.
         :param field: описание параметра.
@@ -180,7 +180,7 @@ class Model:
         try:
             field_types = field.types()
             if field_types[0] is list:
-                value = [field_types[1](**item) for item in value]
+                value = self._handle_list(value, field_types[1])
             else:
                 value = field_types[0](value)
         except (ValueError, TypeError) as err:
@@ -189,6 +189,21 @@ class Model:
                 f"is invalid: {err}"
             )
         return value
+
+    def _handle_list(self, value: list, list_arg: Type[T]) -> list[T]:
+        handled_values = []
+        for i, item in enumerate(value):
+            if isinstance(item, dict):
+                handled_values.append(list_arg(**item))
+            elif isinstance(item, list_arg):
+                handled_values.append(item)
+            else:
+                raise ValidationError(
+                    f"Parameter \"{i}\" for object \"{self.name}\" "
+                    f"must be a {list_arg} instance."
+                )
+        return handled_values
+
 
     def _validate(self, value: Any, field_name: str) -> Any:
         """

@@ -40,38 +40,38 @@ class Database(Model):
             )
         return tables
 
-    # @param_validator("tables")
-    # def tables_validator(self, tables: list | None) -> list:
-    #     return tables or []
+    def add_table(self, table: Table) -> None:
+        """
+        Добавление таблицы в базу данных.
 
-    # def add_table(self, table: Table) -> None:
-    #     """
-    #     Добавление таблицы в базу данных.
-    #
-    #     :param table: таблица.
-    #     :return: None.
-    #
-    #     :raises AddTableError: если таблица с таким именем уже существует.
-    #     """
-    #     duplicates = [t for t in self.tables if t.name == table.name]
-    #     if duplicates:
-    #         raise DatabaseObjectExistsError(
-    #             f"Table {table.name} already exists"
-    #         )
-    #     self.tables.append(table)
-    #
-    # def drop_table(self, table_name: str) -> None:
-    #     """
-    #     Удаление таблицы из базы данных.
-    #
-    #     :param table_name: имя таблицы.
-    #     :return: None.
-    #     """
-    #     tables = [t for t in self.tables if t.name == table_name]
-    #     try:
-    #         table = tables[0]
-    #         self.tables.remove(table)
-    #     except IndexError:
-    #         raise DatabaseObjectNotFoundError(
-    #             f"Table {table_name} not found"
-    #         )
+        :param table: таблица.
+        :return: None.
+
+        :raises DatabaseObjectExistsError: если таблица с таким именем уже
+            существует.
+        """
+        duplicates = [t for t in self.tables if t.name == table.name]
+        if duplicates:
+            raise DatabaseObjectExistsError(
+                f"Table {table.name} already exists"
+            )
+        self.tables.append(table)
+
+    def drop_table(self, table_name: str) -> None:
+        """
+        Удаление таблицы из базы данных.
+
+        :param table_name: имя таблицы.
+        :return: None.
+
+        :raises DatabaseObjectNotFoundError: если таблицы с таким именем
+            не существует.
+        """
+        tables = [t for t in self.tables if t.name == table_name]
+        try:
+            table = tables[0]
+            self.tables.remove(table)
+        except IndexError:
+            raise DatabaseObjectNotFoundError(
+                f"Table {table_name} not found"
+            )

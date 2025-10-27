@@ -19,8 +19,6 @@ def load_metadata(filepath: Path) -> dict:
 
     :raises GetMetadataError: если не удалось загрузить метаданные.
     """
-    if not filepath.exists():
-        return {}
     try:
         with filepath.open() as file:
             data = load(file)

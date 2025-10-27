@@ -38,6 +38,8 @@ class Config:
                 f"Cannot load config from {config_path}: "
                 f"{err} ({err.__class__.__name__})"
             )
+        else:
+            self.__is_loaded = True
 
 
 CONFIG = Config()
