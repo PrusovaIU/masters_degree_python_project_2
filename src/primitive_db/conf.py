@@ -13,7 +13,7 @@ class ConfigJSONTags(Enum):
 class Config:
     def __init__(self):
         self.__is_loaded = False
-        self._db_metadata_path: Path | None = None
+        self._db_metadata_path: Path | None = Path("db.json")
 
     def _check_loaded(self):
         if not self.__is_loaded:

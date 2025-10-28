@@ -4,6 +4,7 @@ from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
 from src.primitive_db.utils.metadata import save_metadata, load_metadata
 from src.primitive_db.conf import CONFIG
+from src.primitive_db.const.columns_type import ColumnsType
 
 
 class Core:
@@ -37,7 +38,7 @@ class Core:
             self,
             table_name: str,
             columns: list[tuple[str, str]]
-    ) -> None:
+    ) -> Table:
         """
         Обработка команды создания таблицы.
 
@@ -57,9 +58,14 @@ class Core:
             Column(column_name.strip(), type=column_type.strip())
             for column_name, column_type in columns
         ]
+        column_objs.insert(
+            0,
+            Column("ID", type=ColumnsType.int.value)
+        )
         table = Table(table_name, columns=column_objs)
         self._database_meta.add_table(table)
         save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
+        return table
 
     def list_tables(self) -> list[Table]:
         """

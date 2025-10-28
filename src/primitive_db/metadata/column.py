@@ -1,5 +1,6 @@
 from .db_object import Model, Field, ValidationError
 from .validator import field_validator
+from src.primitive_db.const.columns_type import ColumnsType
 
 
 class ColumnTypeError(ValidationError):
@@ -11,9 +12,12 @@ class ColumnTypeError(ValidationError):
 
 
 _COLUMN_TYPE = {
-    "int": int,
-    "str": str,
-    "bool": bool
+    type_name.value: python_type
+    for type_name, python_type in {
+        ColumnsType.int: int,
+        ColumnsType.str: str,
+        ColumnsType.bool: bool
+    }
 }
 
 
