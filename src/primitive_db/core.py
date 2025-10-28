@@ -7,6 +7,11 @@ from src.primitive_db.conf import CONFIG
 
 
 class Core:
+    """
+    Класс, реализующий функционал ядра базы данных.
+
+    :param metadata_path: путь к файлу с метаданными.
+    """
     def __init__(self, metadata_path: Path):
         self._metadata_path = metadata_path
         self._database_meta = self._get_database_meta(metadata_path)
@@ -42,9 +47,11 @@ class Core:
 
         :return: None.
 
-        :raises metadata.db_object.DatabaseError: если не удалось создать таблицу.
+        :raises metadata.db_object.DatabaseError: если не удалось создать
+            таблицу.
 
-        :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
+        :raises utils.metadata.MetadataError: если не удалось сохранить
+            метаданные.
         """
         column_objs = [
             Column(column_name.strip(), type=column_type.strip())
@@ -53,6 +60,12 @@ class Core:
         table = Table(table_name, columns=column_objs)
         self._database_meta.add_table(table)
         save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
+
+    def list_tables(self) -> list[Table]:
+        """
+        :return: список таблиц базы данных.
+        """
+        return self._database_meta.tables
 
     def drop_table(self, table_name: str) -> None:
         """
@@ -63,9 +76,11 @@ class Core:
 
         :return: None.
 
-        :raises metadata.db_object.DatabaseError: если не удалось удалить таблицу.
+        :raises metadata.db_object.DatabaseError: если не удалось удалить
+            таблицу.
 
-        :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
+        :raises utils.metadata.MetadataError: если не удалось сохранить
+            метаданные.
         """
         self._database_meta.drop_table(table_name)
         save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
