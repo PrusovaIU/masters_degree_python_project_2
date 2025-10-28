@@ -1,55 +1,71 @@
-from src.primitive_db.db_objs import Database, Table
-from src.primitive_db.db_objs.column import Column
-from src.primitive_db.utils.metadata import save_metadata
+from pathlib import Path
+
+from src.primitive_db.metadata import Database, Table
+from src.primitive_db.metadata.column import Column
+from src.primitive_db.utils.metadata import save_metadata, load_metadata
 from src.primitive_db.conf import CONFIG
 
 
-def _create_columns(columns: list[str]) -> list[Column]:
-    column_objs = []
-    for column in columns:
-        column_name, column_type = column.split(":")
-        column_objs.append(
+class Core:
+    def __init__(self, metadata_path: Path):
+        self._metadata_path = metadata_path
+        self._database_meta = self._get_database_meta(metadata_path)
+
+    @staticmethod
+    def _get_database_meta(metadata_path: Path) -> Database:
+        """
+        Получение описания базы данных из файла метаданных.
+
+        :param metadata_path: путь к файлу метаданных.
+        :return: описание базы данных.
+        """
+        if metadata_path.exists():
+            metadata: dict = load_metadata(metadata_path)
+            database = Database(**metadata)
+        else:
+            database_name: str = metadata_path.name.split(".")[0]
+            database = Database(database_name)
+            save_metadata(metadata_path, database.dumps())
+        return database
+
+    def create_table(
+            self,
+            table_name: str,
+            columns: list[tuple[str, str]]
+    ) -> None:
+        """
+        Обработка команды создания таблицы.
+
+        :param database: описание базы данных.
+        :param table_name: имя таблицы.
+        :param columns: список с описанием колонок вида [имя, тип].
+
+        :return: None.
+
+        :raises metadata.db_object.DatabaseError: если не удалось создать таблицу.
+
+        :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
+        """
+        column_objs = [
             Column(column_name.strip(), type=column_type.strip())
-        )
-    return column_objs
+            for column_name, column_type in columns
+        ]
+        table = Table(table_name, columns=column_objs)
+        self._database_meta.add_table(table)
+        save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
 
+    def drop_table(self, table_name: str) -> None:
+        """
+        Обработка команды удаления таблицы.
 
-def create_table(
-        database: Database,
-        table_name: str,
-        columns: list[str]
-) -> None:
-    """
-    Обработка команды создания таблицы.
+        :param database: описание базы данных.
+        :param table_name: имя таблицы.
 
-    :param database: описание базы данных.
-    :param table_name: имя таблицы.
-    :param columns: список строк с описанием колонок вида имя:тип.
+        :return: None.
 
-    :return: None.
+        :raises metadata.db_object.DatabaseError: если не удалось удалить таблицу.
 
-    :raises db_objs.db_object.DatabaseError: если не удалось создать таблицу.
-
-    :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
-    """
-    column_objs = _create_columns(columns)
-    table = Table(table_name, columns=column_objs)
-    database.add_table(table)
-    save_metadata(CONFIG.db_metadata_path, database.dumps())
-
-
-def drop_table(database: Database, table_name: str) -> None:
-    """
-    Обработка команды удаления таблицы.
-
-    :param database: описание базы данных.
-    :param table_name: имя таблицы.
-
-    :return: None.
-
-    :raises db_objs.db_object.DatabaseError: если не удалось удалить таблицу.
-
-    :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
-    """
-    database.drop_table(table_name)
-    save_metadata(CONFIG.db_metadata_path, database.to_json())
+        :raises utils.metadata.MetadataError: если не удалось сохранить метаданные.
+        """
+        self._database_meta.drop_table(table_name)
+        save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())

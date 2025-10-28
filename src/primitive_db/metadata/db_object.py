@@ -169,7 +169,7 @@ class Model:
 
     def _format_custom_value(self, value: Any, field: Field) -> Any:
         """
-        Форматирование значения параметра.
+        Приведение значения параметра к требуемому типу.
 
         :param value: значение параметра.
         :param field: описание параметра.
@@ -191,6 +191,16 @@ class Model:
         return value
 
     def _handle_list(self, value: list, list_arg: Type[T]) -> list[T]:
+        """
+        Обработка списка значений.
+
+        :param value: Список значений.
+        :param list_arg: Требуемый тип элементов списка.
+        :return: Обработанный список значений.
+
+        :raises ValidationError: если в списке присутствуют некорректные
+            значения.
+        """
         handled_values = []
         for i, item in enumerate(value):
             if isinstance(item, dict):

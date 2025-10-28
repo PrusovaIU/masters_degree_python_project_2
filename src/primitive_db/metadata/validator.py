@@ -17,7 +17,7 @@ class FieldValidator:
 
     Пример использования:
 
-        from db_objs.db_object import Model
+        from metadata.db_object import Model
 
         class MyClass(Model):
 

@@ -1,6 +1,6 @@
 from collections import Counter
 
-from src.primitive_db.db_objs.db_object import Model
+from src.primitive_db.metadata.db_object import Model
 
 
 def get_duplicates(lst: list[Model]) -> list[str]:
