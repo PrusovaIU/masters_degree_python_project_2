@@ -5,44 +5,48 @@ from src.primitive_db.core import Core
 from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.metadata import DatabaseError, Table
-from re import match, findall
+from re import match, findall, Match
+from typing import ClassVar
 
 
 class CommandError(Exception):
     pass
 
 
-def simple_handler(func: Callable[[str], None]) -> Callable[[str], None]:
-    def wrapper(command_data: str) -> None:
+CommandDataType = str | None
+HandlerType = Callable[[ClassVar], None]
+
+
+def simple_handler(func: HandlerType) -> HandlerType:
+    def wrapper(self, command_data: CommandDataType = None) -> None:
         if command_data:
             raise CommandError("Команда не принимает аргументов")
         else:
-            func(command_data)
+            func(self)
     return wrapper
 
 
 class Engine:
     def __init__(self):
         self._core = Core(CONFIG.db_metadata_path)
-        self._exit = False
+        self._exit_flag = False
         self._handlers: dict[Commands, Callable[[str], None]] = {
             command: getattr(self, f"_{command.value}")
             for command in Commands
         }
 
-    @staticmethod
     @simple_handler
-    def _help(command_data: str) -> None:
+    def _help(self) -> None:
         print(COMMANDS_HELP)
 
     @simple_handler
-    def _exit(self, command_data: str) -> None:
-        to_exit = prompt.regex(
+    def _exit(self) -> None:
+        to_exit: Match = prompt.regex(
             r"^(y|n)$",
             "Вы уверены, что хотите выйти? (y/n): "
         )
-        if to_exit == "y":
-            self._exit = True
+        if to_exit.string == "y":
+            self._exit_flag = True
 
     def _create_table(self, command_data: str) -> None:
         command_data = command_data.strip()
@@ -50,8 +54,8 @@ class Engine:
         if not cd_match:
             print("Неверный формат команды")
             return None
-        table_name: str = cd_match[0]
-        fields: str = cd_match[1]
+        table_name: str = cd_match.group(1)
+        fields: str = cd_match.group(2)
         columns: list[tuple[str, str]] = []
         for item in findall(r"\w+ ?: ?\w+", fields):
             column_name, column_type = [el.strip() for el in item.split(":")]
@@ -75,20 +79,31 @@ class Engine:
         lines = []
         for table in self._core.list_tables():
             lines.append(f"\t- {table.name}")
-        data = "\n".join(lines)
+        if lines:
+            data = "\n".join(lines)
+        else:
+            data = "Таблицы отсутствуют"
         print(data)
+
+    def _drop_table(self, command_data: str) -> None:
+        pass
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:
         data = prompt.string("Введите команду: ")
-        command, command_data = data.split(" ", maxsplit=1)
+        command_els = data.split(" ", maxsplit=1)
+        command = command_els[0].lower().strip()
+        command_data = command_els[1].strip() \
+            if len(command_els) > 1 \
+            else None
         try:
             return Commands(command), command_data
         except ValueError:
             raise CommandError("Команда не найдена")
 
     def run(self) -> None:
-        while not self._exit:
+        self._help()
+        while not self._exit_flag:
             try:
                 command, command_data = self._input_command()
                 handler = self._handlers[command]

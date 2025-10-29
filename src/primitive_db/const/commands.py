@@ -24,7 +24,8 @@ COMMANDS_HELP = "\n".join([
     "\n",
     "Функции:",
     *[
-        f"<command> {command.value}{description}"
+        f"<command> {command.value} {description}"
         for command, description in COMMANDS_DESCRIPTION.items()
-    ]
+    ],
+    "\n"
 ])

@@ -17,7 +17,7 @@ _COLUMN_TYPE = {
         ColumnsType.int: int,
         ColumnsType.str: str,
         ColumnsType.bool: bool
-    }
+    }.items()
 }
 
 
