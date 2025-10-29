@@ -23,7 +23,7 @@ class Table(Model):
         duplicates = get_duplicates(columns)
         if duplicates:
             raise ValidationError(
-                f"duplicate names of columns ({', '.join(duplicates)})"
+                f"колонки с дублирующимися именами ({', '.join(duplicates)})"
             )
         return columns
 

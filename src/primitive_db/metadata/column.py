@@ -35,7 +35,7 @@ class Column(Model):
         try:
             self._python_type = _COLUMN_TYPE[value]
         except KeyError:
-            raise ColumnTypeError(f"Column type {value} is not supported")
+            raise ColumnTypeError(f"Тип колонки {value} не поддерживается")
 
     @property
     def python_type(self) -> type:

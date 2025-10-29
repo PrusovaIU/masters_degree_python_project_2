@@ -36,7 +36,7 @@ class Database(Model):
         duplicates = get_duplicates(tables)
         if duplicates:
             raise ValidationError(
-                f"duplicate names of tables ({', '.join(duplicates)})"
+                f"таблицы с дублирующимися именами ({', '.join(duplicates)})"
             )
         return tables
 
@@ -53,7 +53,7 @@ class Database(Model):
         duplicates = [t for t in self.tables if t.name == table.name]
         if duplicates:
             raise DatabaseObjectExistsError(
-                f"Table {table.name} already exists"
+                f"Таблица {table.name} уже существует"
             )
         self.tables.append(table)
 
@@ -73,5 +73,5 @@ class Database(Model):
             self.tables.remove(table)
         except IndexError:
             raise DatabaseObjectNotFoundError(
-                f"Table {table_name} not found"
+                f"Таблица {table_name} не найдена"
             )
