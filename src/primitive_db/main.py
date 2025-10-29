@@ -1,48 +1,15 @@
 #!/usr/bin/env python3
-from engine import welcome
-from src.primitive_db.db_objs.database import Database
+from engine import Engine
+from src.primitive_db.metadata import Database, Column
+from src.primitive_db.utils.metadata import load_metadata, MetadataFileError, save_metadata
+from pathlib import Path
+from loguru import logger
+from src.primitive_db.core import Core
+from src.primitive_db.conf import CONFIG
 
-
-def main():
-    print("DB project is running!")
-    welcome()
 
 if __name__ == "__main__":
-    db = Database.from_json(
-        {
-            "name": "db",
-            "tables": [
-                {
-                    "name": "users",
-                    "columns": [
-                        {
-                            "name": "id",
-                            "type": "int"
-                        },
-                        {
-                            "name": "name",
-                            "type": "str"
-                        }
-                    ]
-                },
-                {
-                    "name": "posts",
-                    "columns": [
-                        {
-                            "name": "id",
-                            "type": "int"
-                        },
-                        {
-                            "name": "title",
-                            "type": "str"
-                        }
-                    ]
-                }
-            ]
-        }
-    )
-    print(db)
-    from json import dumps
-    a = db.to_json()
-    print(dumps(a, indent=3))
-    print(Database.from_json(a))
+    CONFIG.load(Path("/home/hex/git/masters_degree_python_project_2/src/conf.json"))
+    engine = Engine()
+    engine.run()
+

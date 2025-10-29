@@ -19,14 +19,12 @@ def load_metadata(filepath: Path) -> dict:
 
     :raises GetMetadataError: если не удалось загрузить метаданные.
     """
-    if not filepath.exists():
-        return {}
     try:
         with filepath.open() as file:
             data = load(file)
     except (OSError, JSONDecodeError) as err:
         raise MetadataFileError(
-            f"Cannot get metadata from {filepath}: "
+            f"Не удалось загрузить метаданные из файла {filepath}: "
             f"{err} ({err.__class__.__name__})"
         )
     return data
@@ -47,7 +45,7 @@ def save_metadata(filepath: Path, data: dict) -> None:
             dump(data, file, indent=4, ensure_ascii=False)
     except OSError as err:
         raise MetadataFileError(
-            f"Cannot save metadata to {filepath}: "
+            f"Не удалось сохранить метаданные в файл {filepath}: "
             f"{err} ({err.__class__.__name__})"
         )
 

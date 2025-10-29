@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class ColumnTypes(Enum):
-    int ="int"
+class ColumnsType(Enum):
+    int = "int"
     str = "str"
     bool = "bool"
