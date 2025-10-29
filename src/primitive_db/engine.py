@@ -90,7 +90,11 @@ class Engine:
         :raises CommandError: если аргументы команды не соответствуют
             требуемому формату.
 
-        :raises DatabaseError: если не удалось создать таблицу.
+        :raises metadata.db_object.DatabaseError: если не удалось удалить
+            таблицу.
+
+        :raises utils.metadata.MetadataError: если не удалось сохранить
+            метаданные.
         """
         table_name, columns = self._create_table_handle_cd(command_data)
         table: Table = self._core.create_table(table_name, columns)
@@ -99,7 +103,7 @@ class Engine:
             for column in table.columns
         ]
         print(
-            f"Таблица {table_name} успешно создана со столбцами: "
+            f"Таблица \"{table_name}\" успешно создана со столбцами: "
             f"{', '.join(columns_descr)}"
         )
 
@@ -116,7 +120,6 @@ class Engine:
         :raises CommandError: если аргументы команды не соответствуют
             требуемому формату.
         """
-        command_data = command_data.strip()
         cd_match = match(r"^(\w+) ((\w+ ?: ?\w+ ?)+)$", command_data)
         if not cd_match:
             raise CommandSyntaxError("Неверный формат команды")
@@ -159,7 +162,28 @@ class Engine:
         print(data)
 
     def _drop_table(self, command_data: str) -> None:
-        pass
+        """
+        Обработчик команды drop_table.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises metadata.db_object.DatabaseError: если не удалось удалить
+            таблицу.
+
+        :raises utils.metadata.MetadataError: если не удалось сохранить
+            метаданные.
+        """
+        cd_match = match(r"^(\w+)$", command_data)
+        if not cd_match:
+            raise CommandSyntaxError("Неверный формат команды")
+        self._core.drop_table(command_data)
+        print(
+            f"Таблица \"{command_data}\" успешно удалена"
+        )
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:

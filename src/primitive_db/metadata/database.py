@@ -53,7 +53,7 @@ class Database(Model):
         duplicates = [t for t in self.tables if t.name == table.name]
         if duplicates:
             raise DatabaseObjectExistsError(
-                f"Таблица {table.name} уже существует"
+                f"Таблица \"{table.name}\" уже существует"
             )
         self.tables.append(table)
 
@@ -73,5 +73,5 @@ class Database(Model):
             self.tables.remove(table)
         except IndexError:
             raise DatabaseObjectNotFoundError(
-                f"Таблица {table_name} не найдена"
+                f"Таблица \"{table_name}\" не найдена"
             )
