@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from engine import Engine
 from src.primitive_db.metadata import Database, Column
-from src.primitive_db.utils.metadata import load_metadata, MetadataFileError, save_metadata
 from pathlib import Path
 from loguru import logger
 from src.primitive_db.core import Core

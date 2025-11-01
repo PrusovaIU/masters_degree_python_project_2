@@ -50,7 +50,7 @@ class Engine:
     Движок для взаимодействия с пользователем.
     """
     def __init__(self):
-        self._core = Core(CONFIG.db_metadata_path)
+        self._core = Core(CONFIG.database_path)
         self._exit_flag = False
         self._handlers: dict[Commands, Callable[[str], None]] = {
             command: getattr(self, f"_{command.value}")

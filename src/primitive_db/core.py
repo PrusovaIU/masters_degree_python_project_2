@@ -2,8 +2,7 @@ from pathlib import Path
 
 from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
-from src.primitive_db.utils.metadata import save_metadata, load_metadata
-from src.primitive_db.conf import CONFIG
+from src.primitive_db.utils.load_data import save_data, load_data
 from src.primitive_db.const.columns_type import ColumnsType
 
 
@@ -13,9 +12,10 @@ class Core:
 
     :param metadata_path: путь к файлу с метаданными.
     """
-    def __init__(self, metadata_path: Path):
-        self._metadata_path = metadata_path
-        self._database_meta = self._get_database_meta(metadata_path)
+    def __init__(self, database_path: Path):
+        self._database_path = database_path
+        self._database_meta_path = database_path / "metadata.json"
+        self._database_meta = self._get_database_meta(self._database_meta_path)
 
     @staticmethod
     def _get_database_meta(metadata_path: Path) -> Database:
@@ -26,12 +26,12 @@ class Core:
         :return: описание базы данных.
         """
         if metadata_path.exists():
-            metadata: dict = load_metadata(metadata_path)
+            metadata: dict = load_data(metadata_path)
             database = Database(**metadata)
         else:
             database_name: str = metadata_path.name.split(".")[0]
             database = Database(database_name)
-            save_metadata(metadata_path, database.dumps())
+            save_data(metadata_path, database.dumps())
         return database
 
     def create_table(
@@ -64,7 +64,7 @@ class Core:
         )
         table = Table(table_name, columns=column_objs)
         self._database_meta.add_table(table)
-        save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
+        save_data(self._database_meta_path, self._database_meta.dumps())
         return table
 
     def list_tables(self) -> list[Table]:
@@ -89,4 +89,4 @@ class Core:
             метаданные.
         """
         self._database_meta.drop_table(table_name)
-        save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
+        save_data(self._database_meta_path, self._database_meta.dumps())

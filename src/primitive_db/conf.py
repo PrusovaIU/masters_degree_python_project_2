@@ -7,13 +7,13 @@ class LoadConfigError(Exception):
 
 
 class ConfigJSONTags(Enum):
-    db_metadata_path = "db_metadata_path"
+    database_path = "database_path"
 
 
 class Config:
     def __init__(self):
         self.__is_loaded = False
-        self._db_metadata_path: Path | None = Path("db.json")
+        self._database_path: Path | None = Path("database_data")
 
     def _check_loaded(self):
         if not self.__is_loaded:
@@ -22,16 +22,15 @@ class Config:
             )
 
     @property
-    def db_metadata_path(self) -> Path:
-        self._check_loaded()
-        return self._db_metadata_path
+    def database_path(self) -> Path:
+        return self._database_path
 
     def load(self, config_path: Path) -> None:
         try:
             with config_path.open() as f:
                 data = load(f)
-            self._db_metadata_path = Path(
-                data[ConfigJSONTags.db_metadata_path.value]
+            self._database_path = Path(
+                data[ConfigJSONTags.database_path.value]
             )
         except Exception as err:
             raise LoadConfigError(
