@@ -10,7 +10,7 @@ class SaveDataError(Exception):
     pass
 
 
-def load_data(filepath: Path) -> dict:
+def load_data(filepath: Path) -> dict | list:
     """
     Загрузка данных из файла.
 
@@ -30,7 +30,7 @@ def load_data(filepath: Path) -> dict:
     return data
 
 
-def save_data(filepath: Path, data: dict) -> None:
+def save_data(filepath: Path, data: dict | list) -> None:
     """
     Сохранение данных в файл.
 

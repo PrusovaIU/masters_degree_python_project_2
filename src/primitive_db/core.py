@@ -15,7 +15,9 @@ class Core:
     def __init__(self, database_path: Path):
         self._database_path = database_path
         self._database_meta_path = database_path / "metadata.json"
-        self._database_meta = self._get_database_meta(self._database_meta_path)
+        self._database = self._get_database_meta(self._database_meta_path)
+        for table in self._database.tables:
+            self._get_table_data(table)
 
     @staticmethod
     def _get_database_meta(metadata_path: Path) -> Database:
@@ -33,6 +35,23 @@ class Core:
             database = Database(database_name)
             save_data(metadata_path, database.dumps())
         return database
+
+    def _get_table_data(self, table: Table) -> None:
+        """
+        Получение данных таблицы из файла.
+        Если файл с данными таблицы существует, то данные считываются из него.
+        Иначе, создается пустой список для данных таблицы и сохраняется в
+        новом файле.
+
+        :param table: описание таблицы.
+        :return: None.
+        """
+        path: Path = self._database_path / f"table_{table.name}.json"
+        if path.exists():
+            table.rows = load_data(path)
+        else:
+            table.rows = []
+            save_data(path, table.rows)
 
     def create_table(
             self,
@@ -63,15 +82,16 @@ class Core:
             Column("ID", type=ColumnsType.int.value)
         )
         table = Table(table_name, columns=column_objs)
-        self._database_meta.add_table(table)
-        save_data(self._database_meta_path, self._database_meta.dumps())
+        self._database.add_table(table)
+        save_data(self._database_meta_path, self._database.dumps())
+        self._get_table_data(table)
         return table
 
     def list_tables(self) -> list[Table]:
         """
         :return: список таблиц базы данных.
         """
-        return self._database_meta.tables
+        return self._database.tables
 
     def drop_table(self, table_name: str) -> None:
         """
@@ -88,5 +108,5 @@ class Core:
         :raises utils.metadata.MetadataError: если не удалось сохранить
             метаданные.
         """
-        self._database_meta.drop_table(table_name)
-        save_data(self._database_meta_path, self._database_meta.dumps())
+        self._database.drop_table(table_name)
+        save_data(self._database_meta_path, self._database.dumps())

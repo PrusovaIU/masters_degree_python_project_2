@@ -1,3 +1,5 @@
+from typing import Any
+
 from .db_object import DatabaseError, Model, Field, ValidationError
 from .column import Column
 from .validator import field_validator
@@ -11,8 +13,13 @@ class TableError(DatabaseError):
     pass
 
 
+class TableRowError(TableError):
+    pass
+
+
 class Table(Model):
     columns: list[Column] = Field(list[Column], required=True)
+    _rows: list[dict] | None = None
 
     def __str__(self):
         columns = ", ".join([column.name for column in self.columns])
@@ -27,18 +34,37 @@ class Table(Model):
             )
         return columns
 
-    # @property
-    # def columns(self) -> list[Column]:
-    #     return self._columns
+    @property
+    def rows(self) -> list[dict]:
+        return self._rows
 
-    # @classmethod
-    # def included_objs(cls) -> list[IncludedObject]:
-    #     return [
-    #         IncludedObject(
-    #             "columns",
-    #             TableJsonTag.columns.value,
-    #             Column,
-    #             True
-    #         )
-    #     ]
+    @rows.setter
+    def rows(self, rows: list[dict]) -> None:
+        self._rows = [self._validate_row(row) for row in rows]
+
+    def _validate_row(self, row: dict) -> dict[str, Any]:
+        """
+        Валидация строки таблицы.
+
+        :param row: строка таблицы вида {имя_колонки: значение}
+        :return: валидированная строка.
+
+        :raises TableRowError: если строка не соответствует формату таблицы.
+        """
+        data = {}
+        try:
+            for column in self.columns:
+                if column.name not in row:
+                    raise TableRowError(
+                        f"в строке {row} не указано значение для колонки "
+                        f"{column.name}"
+                    )
+                data[column.name] = column.validate_value(row[column.name])
+        except ValueError as err:
+            raise TableRowError(
+                f"в строке {row} указано некорректное значение для колонки "
+                f"{column.name} ({err})"
+            ) from err
+        return data
+
 
