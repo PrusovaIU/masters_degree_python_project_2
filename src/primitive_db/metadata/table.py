@@ -4,6 +4,7 @@ from .db_object import DatabaseError, Model, Field, ValidationError
 from .column import Column
 from .validator import field_validator
 from src.primitive_db.utils.duplicates import get_duplicates
+from src.primitive_db.const.auto_column_names import AutoColumnNames
 
 
 class TableError(DatabaseError):
@@ -66,5 +67,24 @@ class Table(Model):
                 f"{column.name} ({err})"
             ) from err
         return data
+
+    def add_row(self, values: dict) -> int:
+        """
+        Добавить строку в таблицу.
+
+        :param values: значения колонок в виде {имя_колонки: значение}
+        :return: ID добавленной строки.
+
+        :raises TableRowError: если строка не соответствует формату таблицы.
+        """
+        max_id: int = max(
+            [row[AutoColumnNames.ID.value] for row in self._rows],
+            default=0
+        )
+        row_id = max_id + 1
+        values[AutoColumnNames.ID.value] = row_id
+        row = self._validate_row(values)
+        self._rows.append(row)
+        return row_id
 
 

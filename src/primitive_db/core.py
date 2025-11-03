@@ -4,6 +4,7 @@ from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
 from src.primitive_db.utils.load_data import save_data, load_data
 from src.primitive_db.const.columns_type import ColumnsType
+from src.primitive_db.const.auto_column_names import AutoColumnNames
 
 
 class Core:
@@ -46,12 +47,25 @@ class Core:
         :param table: описание таблицы.
         :return: None.
         """
-        path: Path = self._database_path / f"table_{table.name}.json"
+        path: Path = self._table_file_path(table.name)
         if path.exists():
             table.rows = load_data(path)
         else:
             table.rows = []
             save_data(path, table.rows)
+
+    def _table_file_path(self, table_name: str) -> Path:
+        """
+        :param table_name: название таблицы.
+        :return: путь к файлу с данными таблицы.
+        """
+        return self._database_path / f"table_{table_name}.json"
+
+    def _table_names(self) -> list[str]:
+        """
+        :return: список имен таблиц, существующих в базе данных.
+        """
+        return [table.name for table in self._database.tables]
 
     def create_table(
             self,
@@ -79,7 +93,7 @@ class Core:
         ]
         column_objs.insert(
             0,
-            Column("ID", type=ColumnsType.int.value)
+            Column(AutoColumnNames.ID.value, type=ColumnsType.int.value)
         )
         table = Table(table_name, columns=column_objs)
         self._database.add_table(table)
@@ -110,3 +124,19 @@ class Core:
         """
         self._database.drop_table(table_name)
         save_data(self._database_meta_path, self._database.dumps())
+
+    def insert(self, table_name: str, values: dict) -> int:
+        """
+        Обработка команды вставки данных в таблицу.
+
+        :param table_name: название таблицы.
+        :param values: значения колонок.
+        :return: ID добавленной строки.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось добавить строку.
+        """
+        table: Table = self._database.get_table(table_name)
+        row_id: int = table.add_row(values)
+        save_data(self._table_file_path(table_name), table.rows)
+        return row_id
