@@ -6,8 +6,7 @@ from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.metadata import DatabaseError, Table
 from re import match, findall, Match
-from typing import ClassVar
-from src.primitive_db.utils.command_data_handler import check_value
+from typing import ClassVar, Any
 
 
 class CommandError(Exception):
@@ -202,10 +201,31 @@ class Engine:
         table_name = matching.group(1)
         values = [el.strip() for el in matching.group(2).split(",")]
         for i, value in enumerate(values):
-            values[i] = check_value(value)
+            values[i] = self._check_value(value)
         row_id: int = self._core.insert(table_name, values)
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
+    @staticmethod
+    def _check_value(value: str) -> Any:
+        """
+        Проверка значения для команд insert и update.
+
+        :param value: значение.
+        :return: проверенное значение.
+        """
+        value = value.strip()
+        if match(r"^[+-]?\d+(\.\d+)?$", value):
+            return value
+
+        if value in ("true", "false"):
+            return value
+
+        quoted_match = match(r"^\"(.*)\"$", value) \
+                       or match(r"^'(.*)'$", value)
+        if quoted_match:
+            return quoted_match.group(1)
+
+        raise ValueError(f"Неверный формат значения ({value})")
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:
