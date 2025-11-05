@@ -154,7 +154,9 @@ class Engine:
         """
         lines = []
         for table in self._core.list_tables():
-            columns = ", ".join([c.name for c in table.columns])
+            columns = ", ".join(
+                [f"{c.name}: {c.column_type}" for c in table.columns]
+            )
             lines.append(f"\t- {table.name} ({columns})")
         if lines:
             data = "\n".join(lines)
