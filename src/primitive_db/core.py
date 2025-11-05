@@ -125,7 +125,7 @@ class Core:
         self._database.drop_table(table_name)
         save_data(self._database_meta_path, self._database.dumps())
 
-    def insert(self, table_name: str, values: dict) -> int:
+    def insert(self, table_name: str, values: list) -> int:
         """
         Обработка команды вставки данных в таблицу.
 
@@ -135,8 +135,21 @@ class Core:
 
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
             удалось добавить строку.
+
+        :raises ValueError: если количество значений не совпадает с количеством
+            колонок.
         """
         table: Table = self._database.get_table(table_name)
+        columns: list[Column] = [
+            c for c in table.columns if c.name != AutoColumnNames.ID.value
+        ]
+        if len(values) != len(columns):
+            raise ValueError(
+                "Количество значений не совпадает с количеством колонок."
+            )
+        values = {
+            column.name: value for column, value in zip(columns, values)
+        }
         row_id: int = table.add_row(values)
         save_data(self._table_file_path(table_name), table.rows)
         return row_id

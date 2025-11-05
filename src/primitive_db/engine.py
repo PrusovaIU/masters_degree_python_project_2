@@ -7,6 +7,7 @@ from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.metadata import DatabaseError, Table
 from re import match, findall, Match
 from typing import ClassVar
+from src.primitive_db.utils.command_data_handler import check_value
 
 
 class CommandError(Exception):
@@ -184,6 +185,27 @@ class Engine:
         print(
             f"Таблица \"{command_data}\" успешно удалена"
         )
+
+    def _insert(self, command_data: str) -> None:
+        """
+        Обработчик команды insert.
+
+        :param command_data: аргументы команды.
+        :return:
+        """
+        matching = match(
+            r"^into (\w+) values \(([\w\", ]+)\)$",
+            command_data
+        )
+        if not matching:
+            raise CommandSyntaxError("Неверный формат команды")
+        table_name = matching.group(1)
+        values = [el.strip() for el in matching.group(2).split(",")]
+        for i, value in enumerate(values):
+            values[i] = check_value(value)
+        row_id: int = self._core.insert(table_name, values)
+        print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
+
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:
