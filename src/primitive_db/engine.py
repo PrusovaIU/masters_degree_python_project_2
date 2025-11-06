@@ -201,8 +201,7 @@ class Engine:
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
             удалось добавить строку.
 
-        :raises ValueError: если количество значений не совпадает с количеством
-            колонок.
+        :raises ValueError: если введены некорректные значения.
         """
         matching = self._match_command_data(
             r"^into (\w+) values \(([\w\", ]+)\)$",
@@ -216,6 +215,20 @@ class Engine:
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
     def _select(self, command_data: str) -> None:
+        """
+        Обработчик команды select.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось получить строки.
+
+        :raises ValueError: если введены некорректные значения.
+        """
         matching = self._match_command_data(
             r"^from (\w+) ?(where ((\w+) ?= ?([\w\"]+)))?$",
             command_data
@@ -231,12 +244,39 @@ class Engine:
         print(pretty_table)
 
     def _update(self, command_data: str) -> None:
-        matching = match(
+        """
+
+        :param command_data:
+        :return:
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось обновить строки.
+
+        :raises ValueError: если введены некорректные значения.
+        """
+        matching = self._match_command_data(
             r"^(\w+) set (\w+) ?= ?([\w\"]+) where (\w+) ?= ?([\w\"]+)$",
             command_data
         )
-        if not matching:
-            raise CommandSyntaxError("Неверный формат команды")
+        table_name = matching.group(1)
+        set_column_name = matching.group(2)
+        set_value = self._check_value(matching.group(3))
+        where_column_name = matching.group(4)
+        where_value = self._check_value(matching.group(5))
+        updated_rows_ids: list[int] = self._core.update(
+            table_name,
+            set_column_name,
+            set_value,
+            where_column_name,
+            where_value
+        )
+        for row_id in updated_rows_ids:
+            print(
+                f"Запись с ID={row_id} обновлена в таблице \"{table_name}\""
+            )
 
     @staticmethod
     def _check_value(value: str) -> Any:
