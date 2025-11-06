@@ -9,24 +9,28 @@ class Commands(Enum):
     drop_table = "drop_table"
     insert = "insert"
     select = "select"
+    update = "update"
     exit = "exit"
     help = "help"
 
 
 DB_COMMANDS_DESCRIPTION = {
     Commands.create_table:
-        "<имя таблицы> <столбец1:тип> <столбец2:тип> ... - создать таблицу",
+        "<имя_таблицы> <столбец1:тип> <столбец2:тип> ... - создать таблицу",
     Commands.list_tables: "- показать список всех таблиц",
-    Commands.drop_table: "<имя таблицы> - удалить таблицу",
+    Commands.drop_table: "<имя_таблицы> - удалить таблицу",
 }
 
 CRUD_COMMANDS_DESCRIPTION = {
     Commands.insert:
-        "into <имя таблицы> values (<значение1>, <значение2>, ...) - "
+        "into <имя_таблицы> values (<значение1>, <значение2>, ...) - "
         "создать запись",
     Commands.select:
-        "from <имя таблицы> [where <столбец> = <значение>] "
-        "- прочитать записи из таблицы"
+        "from <имя_таблицы> [where <столбец> = <значение>] "
+        "- прочитать записи из таблицы",
+    Commands.update:
+        "<имя_таблицы> set <столбец> = <значение> "
+        "where <столбец> = <значение> - обновить запись",
 }
 
 OTHER_COMMANDS_DESCRIPTION = {

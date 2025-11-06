@@ -121,9 +121,10 @@ class Engine:
         :raises CommandError: если аргументы команды не соответствуют
             требуемому формату.
         """
-        cd_match = match(r"^(\w+) ((\w+ ?: ?\w+ ?)+)$", command_data)
-        if not cd_match:
-            raise CommandSyntaxError("Неверный формат команды")
+        cd_match = self._match_command_data(
+            r"^(\w+) ((\w+ ?: ?\w+ ?)+)$",
+            command_data
+        )
         table_name: str = cd_match.group(1)
         fields: str = cd_match.group(2)
         columns = self._create_table_handle_columns_list(fields)
@@ -181,9 +182,7 @@ class Engine:
         :raises utils.metadata.MetadataError: если не удалось сохранить
             метаданные.
         """
-        cd_match = match(r"^(\w+)$", command_data)
-        if not cd_match:
-            raise CommandSyntaxError("Неверный формат команды")
+        cd_match = self._match_command_data(r"^(\w+)$", command_data)
         self._core.drop_table(command_data)
         print(
             f"Таблица \"{command_data}\" успешно удалена"
@@ -205,12 +204,10 @@ class Engine:
         :raises ValueError: если количество значений не совпадает с количеством
             колонок.
         """
-        matching = match(
+        matching = self._match_command_data(
             r"^into (\w+) values \(([\w\", ]+)\)$",
             command_data
         )
-        if not matching:
-            raise CommandSyntaxError("Неверный формат команды")
         table_name = matching.group(1)
         values = [el.strip() for el in matching.group(2).split(",")]
         for i, value in enumerate(values):
@@ -219,12 +216,10 @@ class Engine:
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
     def _select(self, command_data: str) -> None:
-        matching = match(
+        matching = self._match_command_data(
             r"^from (\w+) ?(where ((\w+) ?= ?([\w\"]+)))?$",
             command_data
         )
-        if not matching:
-            raise CommandSyntaxError("Неверный формат команды")
         table_name: str = matching.group(1)
         column_name: Optional[str] = matching.group(4)
         value: Optional[str] = matching.group(5)
@@ -235,6 +230,14 @@ class Engine:
         pretty_table.add_rows(rows[1:])
         print(pretty_table)
 
+    def _update(self, command_data: str) -> None:
+        matching = match(
+            r"^(\w+) set (\w+) ?= ?([\w\"]+) where (\w+) ?= ?([\w\"]+)$",
+            command_data
+        )
+        if not matching:
+            raise CommandSyntaxError("Неверный формат команды")
+
     @staticmethod
     def _check_value(value: str) -> Any:
         """
@@ -243,7 +246,7 @@ class Engine:
         :param value: значение.
         :return: проверенное значение.
 
-
+        :raises ValueError: если значение не соответствует формату.
         """
         value = value.strip()
         if match(r"^[+-]?\d+(\.\d+)?$", value):
@@ -258,6 +261,22 @@ class Engine:
             return quoted_match.group(1)
 
         raise ValueError(f"Неверный формат значения ({value})")
+
+    @staticmethod
+    def _match_command_data(regex: str, command_data: str) -> Match:
+        """
+        Проверка формата аргументов команды.
+
+        :param regex: регулярное выражение.
+        :param command_data: аргументы команды.
+        :return: объект Match, если аргументы соответствуют формату.
+
+        :raises CommandSyntaxError: если аргументы не соответствуют формату.
+        """
+        matching = match(regex, command_data)
+        if not matching:
+            raise CommandSyntaxError("Неверный формат команды")
+        return matching
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:

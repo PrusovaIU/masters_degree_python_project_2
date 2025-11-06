@@ -15,10 +15,16 @@ class TableError(DatabaseError):
 
 
 class TableRowError(TableError):
+    """
+    Класс ошибок, возникающих при работе с строками таблиц.
+    """
     pass
 
 
-class TableSelectError(TableError):
+class UnknownColumnError(TableError):
+    """
+    Класс ошибок, возникающих при обращении к неизвестной колонке.
+    """
     pass
 
 
@@ -46,6 +52,21 @@ class Table(Model):
     @rows.setter
     def rows(self, rows: list[dict]) -> None:
         self._rows = [self._validate_row(row) for row in rows]
+
+    def get_column(self, column_name: str) -> Column:
+        """
+        Получить колонку таблицы по имени.
+
+        :param column_name: имя колонки.
+        :return: колонка таблицы.
+
+        :raises UnknownColumnError: если колонка не найдена.
+        """
+        column = [c for c in self.columns if c.name == column_name]
+        try:
+            return column[0]
+        except IndexError:
+            raise UnknownColumnError(f"колонка \"{column_name}\" не найдена")
 
     def _validate_row(self, row: dict) -> dict[str, Any]:
         """
@@ -104,6 +125,8 @@ class Table(Model):
         :return: список строк таблицы.
 
         :raises ValueError: некорректное данные для фильтрации.
+
+        :raises UnknownColumnError: если колонка не найдена.
         """
         if column_name is None and value is None:
             # вернуть все строки
@@ -114,11 +137,64 @@ class Table(Model):
             raise ValueError("не указано значение для фильтрации")
         else:
             # вернуть строки, соответствующие фильтру
-            column = [c for c in self.columns if c.name == column_name]
-            if not column:
-                raise ValueError(f"колонка {column_name} не найдена")
-            value = column[0].validate_value(value)
-            return [
-                row for row in self._rows
-                if row.get(column_name) == value
-            ]
+            return self._filter_rows(column_name, value)
+
+    def _filter_rows(self, column_name: str, value: Any) -> list[dict]:
+        """
+        Фильтрация строк таблицы по значению в колонке.
+
+        :param column_name: название колонки.
+        :param value: значение для фильтрации.
+        :return: список строк, удовлетворяющих фильтру.
+
+        :raises UnknownColumnError: если колонка не найдена.
+        """
+        value = self._validate_value(column_name, value)
+        return [
+            row for row in self._rows
+            if row.get(column_name) == value
+        ]
+
+    def update_row(
+            self,
+            set_column_name: str,
+            set_value: Any,
+            where_column_name: str,
+            where_value: Any
+    ) -> list[int]:
+        """
+        Обновить строки таблицы.
+
+        :param set_column_name: название колонки для обновления.
+        :param set_value: значение для обновления.
+        :param where_column_name: название колонки для фильтрации.
+        :param where_value: значение для фильтрации.
+        :return: список обновленных строк.
+
+        :raises UnknownColumnError: если колонка не найдена.
+
+        :raises ValueError: переданы некорректные данные.
+        """
+        set_value = self._validate_value(set_column_name, set_value)
+        where_value = self._validate_value(where_column_name, where_value)
+        updated_rows = self._filter_rows(where_column_name, where_value)
+        updated_rows_ids: list[int] = []
+        for row in updated_rows:
+            row[set_column_name] = set_value
+            updated_rows_ids.append(row[AutoColumnNames.ID.value])
+        return updated_rows_ids
+
+    def _validate_value(self, column_name: str, value: Any) -> Any:
+        """
+        Валидация значения для колонки.
+
+        :param column_name: название колонки.
+        :param value: значение.
+        :return: валидированное значение.
+
+        :raises UnknownColumnError: если колонка не найдена.
+
+        :raises ValueError: переданы некорректные данные.
+        """
+        column = self.get_column(column_name)
+        return column.validate_value(value)

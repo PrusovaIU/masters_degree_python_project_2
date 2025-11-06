@@ -177,3 +177,28 @@ class Core:
         for row in table.select(column, value):
             rows.append(list(row.values()))
         return rows
+
+    def update(
+            self,
+            table_name: str,
+            set_column: str,
+            set_value: str,
+            where_column: str,
+            where_value: str
+    ) -> list[int]:
+        """
+        Обновление данных в таблице.
+
+        :param table_name: название таблицы.
+        :param set_column: название колонки, значение которой нужно изменить.
+        :param set_value: новое значение колонки.
+        :param where_column: название колонки, по которой фильтруем данные.
+        :param where_value: значение колонки для фильтрации.
+        :return: список ID обновленных строк.
+        """
+        table: Table = self._database.get_table(table_name)
+        updated_rows_ids: list[int] = table.update_row(
+            set_column, set_value, where_column, where_value
+        )
+        save_data(self._table_file_path(table_name), table.rows)
+        return updated_rows_ids
