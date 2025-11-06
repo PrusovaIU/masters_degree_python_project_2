@@ -137,8 +137,8 @@ class Core:
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
             удалось добавить строку.
 
-        :raises ValueError: если количество значений не совпадает с количеством
-            колонок.
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
         """
         table: Table = self._database.get_table(table_name)
         columns: list[Column] = [
@@ -171,6 +171,9 @@ class Core:
 
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
             удалось получить данные из таблицы.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
         """
         table: Table = self._database.get_table(table_name)
         rows = [[c.name for c in table.columns]]
@@ -195,6 +198,12 @@ class Core:
         :param where_column: название колонки, по которой фильтруем данные.
         :param where_value: значение колонки для фильтрации.
         :return: список ID обновленных строк.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось обновить строки.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
         """
         table: Table = self._database.get_table(table_name)
         updated_rows_ids: list[int] = table.update_row(
@@ -202,3 +211,31 @@ class Core:
         )
         save_data(self._table_file_path(table_name), table.rows)
         return updated_rows_ids
+
+    def delete(
+            self,
+            table_name: str,
+            where_column: str,
+            where_value: str
+    ) -> list[int]:
+        """
+        Удаление данных из таблицы.
+
+        :param table_name: название таблицы.
+        :param where_column: название колонки, по которой фильтруем данные.
+        :param where_value: значение колонки для фильтрации.
+        :return: список ID удаленных строк.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось добавить строку.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
+        """
+        table: Table = self._database.get_table(table_name)
+        deleted_rows_ids: list[int] = table.delete_row(
+            where_column,
+            where_value
+        )
+        save_data(self._table_file_path(table_name), table.rows)
+        return deleted_rows_ids

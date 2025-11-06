@@ -245,9 +245,10 @@ class Engine:
 
     def _update(self, command_data: str) -> None:
         """
+        Обработчик команды update.
 
-        :param command_data:
-        :return:
+        :param command_data: аргументы команды.
+        :return: None.
 
         :raises CommandError: если аргументы команды не соответствуют
             требуемому формату.
@@ -276,6 +277,38 @@ class Engine:
         for row_id in updated_rows_ids:
             print(
                 f"Запись с ID={row_id} обновлена в таблице \"{table_name}\""
+            )
+
+    def _delete(self, command_data: str) -> None:
+        """
+        Обработчик команды delete.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось обновить строки.
+
+        :raises ValueError: если введены некорректные значения.
+        """
+        matching = self._match_command_data(
+            r"^from (\w+) where (\w+) ?= ?([\w\"]+)$",
+            command_data
+        )
+        table_name = matching.group(1)
+        where_column_name = matching.group(2)
+        where_value = self._check_value(matching.group(3))
+        deleted_rows_ids: list[int] = self._core.delete(
+            table_name,
+            where_column_name,
+            where_value
+        )
+        for row_id in deleted_rows_ids:
+            print(
+                f"Запись с ID={row_id} удалена из таблицы \"{table_name}\""
             )
 
     @staticmethod

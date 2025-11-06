@@ -10,6 +10,7 @@ class Commands(Enum):
     insert = "insert"
     select = "select"
     update = "update"
+    delete = "delete"
     exit = "exit"
     help = "help"
 
@@ -31,6 +32,8 @@ CRUD_COMMANDS_DESCRIPTION = {
     Commands.update:
         "<имя_таблицы> set <столбец> = <значение> "
         "where <столбец> = <значение> - обновить запись",
+    Commands.delete:
+        "from <имя_таблицы> where <столбец> = <значение> - удалить запись"
 }
 
 OTHER_COMMANDS_DESCRIPTION = {

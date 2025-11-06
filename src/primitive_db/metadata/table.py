@@ -169,7 +169,7 @@ class Table(Model):
         :param set_value: значение для обновления.
         :param where_column_name: название колонки для фильтрации.
         :param where_value: значение для фильтрации.
-        :return: список обновленных строк.
+        :return: список ID обновленных строк.
 
         :raises UnknownColumnError: если колонка не найдена.
 
@@ -198,3 +198,26 @@ class Table(Model):
         """
         column = self.get_column(column_name)
         return column.validate_value(value)
+
+    def delete_row(
+            self,
+            where_column_name: str,
+            where_value: Any
+    ) -> list[int]:
+        """
+        Удалить строки таблицы.
+
+        :param where_column_name: название колонки для фильтрации.
+        :param where_value: значение для фильтрации.
+        :return: список ID удаленных строк.
+        """
+        where_value = self._validate_value(where_column_name, where_value)
+        deleted_rows_ids: list[int] = []
+        rows = []
+        for row in self._rows:
+            if row[where_column_name] == where_value:
+                deleted_rows_ids.append(row[AutoColumnNames.ID.value])
+            else:
+                rows.append(row)
+        self._rows = rows
+        return deleted_rows_ids
