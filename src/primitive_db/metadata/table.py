@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from .db_object import DatabaseError, Model, Field, ValidationError
 from .column import Column
@@ -15,6 +15,10 @@ class TableError(DatabaseError):
 
 
 class TableRowError(TableError):
+    pass
+
+
+class TableSelectError(TableError):
     pass
 
 
@@ -87,4 +91,34 @@ class Table(Model):
         self._rows.append(row)
         return row_id
 
+    def select(
+            self,
+            column_name: Optional[str],
+            value: Any
+    ) -> list[dict]:
+        """
+        Получить строки таблицы.
 
+        :param column_name: колонка для фильтрации.
+        :param value: значение для фильтрации.
+        :return: список строк таблицы.
+
+        :raises ValueError: некорректное данные для фильтрации.
+        """
+        if column_name is None and value is None:
+            # вернуть все строки
+            return self._rows
+        elif column_name is None:
+            raise ValueError("не указано имя колонки для фильтрации")
+        elif value is None:
+            raise ValueError("не указано значение для фильтрации")
+        else:
+            # вернуть строки, соответствующие фильтру
+            column = [c for c in self.columns if c.name == column_name]
+            if not column:
+                raise ValueError(f"колонка {column_name} не найдена")
+            value = column[0].validate_value(value)
+            return [
+                row for row in self._rows
+                if row.get(column_name) == value
+            ]

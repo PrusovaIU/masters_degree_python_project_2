@@ -6,7 +6,8 @@ from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.metadata import DatabaseError, Table
 from re import match, findall, Match
-from typing import ClassVar, Any
+from typing import ClassVar, Any, Optional
+from prettytable import PrettyTable
 
 
 class CommandError(Exception):
@@ -193,7 +194,16 @@ class Engine:
         Обработчик команды insert.
 
         :param command_data: аргументы команды.
-        :return:
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось добавить строку.
+
+        :raises ValueError: если количество значений не совпадает с количеством
+            колонок.
         """
         matching = match(
             r"^into (\w+) values \(([\w\", ]+)\)$",
@@ -209,7 +219,21 @@ class Engine:
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
     def _select(self, command_data: str) -> None:
-        pass
+        matching = match(
+            r"^from (\w+) ?(where ((\w+) ?= ?([\w\"]+)))?$",
+            command_data
+        )
+        if not matching:
+            raise CommandSyntaxError("Неверный формат команды")
+        table_name: str = matching.group(1)
+        column_name: Optional[str] = matching.group(4)
+        value: Optional[str] = matching.group(5)
+        if value is not None:
+            value = self._check_value(value)
+        rows = self._core.select(table_name, column_name, value)
+        pretty_table = PrettyTable(field_names=rows[0])
+        pretty_table.add_rows(rows[1:])
+        print(pretty_table)
 
     @staticmethod
     def _check_value(value: str) -> Any:
@@ -218,6 +242,8 @@ class Engine:
 
         :param value: значение.
         :return: проверенное значение.
+
+
         """
         value = value.strip()
         if match(r"^[+-]?\d+(\.\d+)?$", value):

@@ -23,7 +23,10 @@ DB_COMMANDS_DESCRIPTION = {
 CRUD_COMMANDS_DESCRIPTION = {
     Commands.insert:
         "into <имя таблицы> values (<значение1>, <значение2>, ...) - "
-        "создать запись"
+        "создать запись",
+    Commands.select:
+        "from <имя таблицы> [where <столбец> = <значение>] "
+        "- прочитать записи из таблицы"
 }
 
 OTHER_COMMANDS_DESCRIPTION = {

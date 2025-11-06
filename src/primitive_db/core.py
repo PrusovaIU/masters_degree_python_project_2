@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
@@ -153,3 +154,26 @@ class Core:
         row_id: int = table.add_row(values)
         save_data(self._table_file_path(table_name), table.rows)
         return row_id
+
+    def select(
+            self,
+            table_name: str,
+            column: Optional[str],
+            value: Optional[str]
+    ) -> list[list]:
+        """
+        Получение данных из таблицы.
+
+        :param table_name: имя таблицы.
+        :param column: колонка, по которой фильтруются данные.
+        :param value: значение колонки для фильтрации.
+        :return: список данных. Первая строка - заголовки колонок.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось получить данные из таблицы.
+        """
+        table: Table = self._database.get_table(table_name)
+        rows = [[c.name for c in table.columns]]
+        for row in table.select(column, value):
+            rows.append(list(row.values()))
+        return rows
