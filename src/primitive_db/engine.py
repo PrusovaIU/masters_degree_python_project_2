@@ -208,6 +208,9 @@ class Engine:
         row_id: int = self._core.insert(table_name, values)
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
+    def _select(self, command_data: str) -> None:
+        pass
+
     @staticmethod
     def _check_value(value: str) -> Any:
         """
