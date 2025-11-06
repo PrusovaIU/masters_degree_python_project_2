@@ -53,5 +53,13 @@ class Column(Model):
         :raises ValueError: если значение не может быть приведено к типу
             колонки.
         """
+        if self._python_type is bool:
+            match value:
+                case "true" | "True" | True | 1:
+                    return True
+                case "false" | "False" | False | 0:
+                    return False
+                case _:
+                    raise ValueError("неверное значение для типа bool")
         return self._python_type(value)
 
