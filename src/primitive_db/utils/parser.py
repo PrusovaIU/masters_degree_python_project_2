@@ -12,13 +12,13 @@ class MatchError(ParserError):
 
 def match_command_data(regex: str, command_data: str) -> Match:
     """
-    Проверка формата аргументов команды.
+    Выполняет сопоставление строки с регулярным выражением.
 
-    :param regex: регулярное выражение.
-    :param command_data: аргументы команды.
-    :return: объект Match, если аргументы соответствуют формату.
+    :param regex: регулярное выражение для поиска совпадения.
+    :param command_data: строка, к которой применяется регулярное выражение.
+    :return: объект `re.Match`, если совпадение найдено.
 
-    :raises MatchError: если аргументы не соответствуют формату.
+    :raises MatchError: если совпадение не найдено.
     """
     matching = match(regex, command_data)
     if not matching:
@@ -28,14 +28,23 @@ def match_command_data(regex: str, command_data: str) -> Match:
 
 def parse_command_conditions(conditions_str: str) -> dict[str, Any]:
     """
-    Парсинг условий команды вида "column1 = value1, column2 = value2".
+    Парсит строку условий команды (например, WHERE или SET) в словарь.
 
-    :param conditions_str: строка с условиями.
-    :return: словарь с условиями вида {колонка: значение}
+    Поддерживает формат: ключ = значение, где значение может быть:
+        - числом (int или float)
+        - строкой в кавычках ("abc" или 'abc')
+        - булевым значением (true/false)
+        - не кавычками, если это идентификатор
 
-    :raises MatchError: если строка с условиями не соответствуют формату.
+    :param conditions_str: строка условий, например: "name = 'John', age = 30".
 
-    :raises ValueError: если значение не соответствует формату.
+    :return: словарь вида {ключ: значение}, где значения проходят валидацию
+        и преобразование через `check_value`.
+
+    :raises ValueError: если формат условия некорректен или значение не
+        может быть распознано
+
+    :raises MatchError: если строка не соответствуют формату.
     """
     data = {}
     conditions = [c.strip() for c in conditions_str.split(",")]
@@ -47,12 +56,17 @@ def parse_command_conditions(conditions_str: str) -> dict[str, Any]:
 
 def check_value(value: str) -> Any:
     """
-    Проверка значения для команд insert и update.
+    Проверяет и преобразует строку в соответствующее значение:
+        - число (int или float)
+        - булево значение (true/false)
+        - строку без кавычек, если она в них заключена
 
-    :param value: значение.
-    :return: проверенное значение.
+    :param value: входная строка.
 
-    :raises ValueError: если значение не соответствует формату.
+    :return: преобразованное значение (str для чисел и bool, str без кавычек
+        для строк).
+
+    :raises ValueError: если формат некорректен.
     """
     value = value.strip()
     if match(r"^[+-]?\d+(\.\d+)?$", value):
