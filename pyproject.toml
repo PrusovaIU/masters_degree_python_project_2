@@ -2,7 +2,7 @@
 name = "project#2_prusova_iuliia"
 version = "0.1.0"
 description = ""
-authors = ["Iuliia <prusova.work@gmail.com>"]
+authors = ["Iuliia Prusova <prusova.work@gmail.com>"]
 packages = [
  { include = "src" },
 ]
@@ -10,11 +10,11 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.10"
 prompt = "^0.4.1"
-loguru = "^0.7.3"
 prettytable = "^3.16.0"
 
 [tool.poetry.dev-dependencies]
 ruff = "^0.14.1"
+asciinema = "^2.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,5 +1,5 @@
+from json import JSONDecodeError, dump, load
 from pathlib import Path
-from json import load, JSONDecodeError, dump
 
 
 class LoadDataError(Exception):

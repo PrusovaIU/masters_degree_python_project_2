@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-
 T = TypeVar('T')
 
 FieldValidatorType = Callable[[T, Any], Any]
@@ -62,5 +61,6 @@ class FieldValidator:
             return cls._validators[class_name].get(field_name)
         else:
             return None
+
 
 field_validator = FieldValidator

@@ -1,6 +1,4 @@
 from enum import Enum
-from io import DEFAULT_BUFFER_SIZE
-from zlib import DEF_BUF_SIZE
 
 
 class Commands(Enum):
@@ -11,6 +9,7 @@ class Commands(Enum):
     select = "select"
     update = "update"
     delete = "delete"
+    info = "info"
     exit = "exit"
     help = "help"
 
@@ -33,7 +32,8 @@ CRUD_COMMANDS_DESCRIPTION = {
         "<имя_таблицы> set <столбец> = <значение> "
         "where <столбец> = <значение> - обновить запись",
     Commands.delete:
-        "from <имя_таблицы> where <столбец> = <значение> - удалить запись"
+        "from <имя_таблицы> where <столбец> = <значение> - удалить запись",
+    Commands.info: "<имя_таблицы> - вывести информацию о таблице"
 }
 
 OTHER_COMMANDS_DESCRIPTION = {
@@ -43,6 +43,10 @@ OTHER_COMMANDS_DESCRIPTION = {
 
 
 def _commands_help(commands: dict[Enum, str]) -> list[str]:
+    """
+    :param commands: словарь с описанием команд.
+    :return: список строк с описанием команд.
+    """
     return [
         f"<command> {command.value} {description}"
         for command, description in commands.items()

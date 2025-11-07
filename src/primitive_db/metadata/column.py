@@ -1,8 +1,9 @@
 from typing import Any
 
-from .db_object import Model, Field, ValidationError
-from .validator import field_validator
 from src.primitive_db.const.columns_type import ColumnsType
+
+from .db_object import Field, Model, ValidationError
+from .validator import field_validator
 
 
 class ColumnTypeError(ValidationError):
@@ -62,4 +63,3 @@ class Column(Model):
                 case _:
                     raise ValueError("неверное значение для типа bool")
         return self._python_type(value)
-
