@@ -11,6 +11,7 @@ from re import match, findall, Match
 from typing import ClassVar, Any, Optional
 from prettytable import PrettyTable
 from src.primitive_db.utils.decorators import handle_db_errors
+from src.primitive_db.exceptions.cancelled_error import CancelledError
 
 CommandDataType = str | None
 HandlerType = Callable[[ClassVar], None]
@@ -360,6 +361,8 @@ class Engine:
                 command, command_data = self._input_command()
                 handler = self._handlers[command]
                 handler(command_data)
+            except CancelledError as err:
+                print(err)
             except CommandError as err:
                 print(err)
             except KeyError:

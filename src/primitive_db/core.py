@@ -6,6 +6,7 @@ from src.primitive_db.metadata.column import Column
 from src.primitive_db.utils.load_data import save_data, load_data
 from src.primitive_db.const.columns_type import ColumnsType
 from src.primitive_db.const.auto_column_names import AutoColumnNames
+from src.primitive_db.utils.decorators import confirm_action
 
 
 class Core:
@@ -111,6 +112,7 @@ class Core:
         """
         return self._database.tables
 
+    @confirm_action("удаление таблицы")
     def drop_table(self, table_name: str) -> None:
         """
         Обработка команды удаления таблицы.
@@ -218,6 +220,7 @@ class Core:
         save_data(self._table_file_path(table_name), table.rows)
         return updated_rows_ids
 
+    @confirm_action("удаление данных")
     def delete(
             self,
             table_name: str,
