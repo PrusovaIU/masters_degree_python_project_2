@@ -195,9 +195,10 @@ class Engine:
             command_data
         )
         table_name = matching.group(1)
-        values = [el.strip() for el in matching.group(2).split(",")]
-        for i, value in enumerate(values):
-            values[i] = self._check_value(value)
+        values = [
+            parser.check_value(el.strip())
+            for el in matching.group(2).split(",")
+        ]
         row_id: int = self._core.insert(table_name, values)
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
@@ -215,11 +216,10 @@ class Engine:
             command_data
         )
         table_name: str = matching.group(1)
-        column_name: Optional[str] = matching.group(4)
-        value: Optional[str] = matching.group(5)
-        if value is not None:
-            value = self._check_value(value)
-        rows = self._core.select(table_name, column_name, value)
+        where: Optional[str] = matching.group(3)
+        values: dict[str, Any] = parser.parse_command_conditions(where) \
+            if where else {}
+        rows = self._core.select(table_name, values)
         pretty_table = PrettyTable(field_names=rows[0])
         pretty_table.add_rows(rows[1:])
         print(pretty_table)
@@ -234,20 +234,16 @@ class Engine:
         :return: None.
         """
         matching = parser.match_command_data(
-            r"^(\w+) set (\w+) ?= ?([\w\"]+) where (\w+) ?= ?([\w\"]+)$",
+            r"^(\w+) set ((\w+ ?= ?[\w\"]+,? ?)+) where (\w+ ?= ?[\w\"]+)$",
             command_data
         )
         table_name = matching.group(1)
-        set_column_name = matching.group(2)
-        set_value = self._check_value(matching.group(3))
-        where_column_name = matching.group(4)
-        where_value = self._check_value(matching.group(5))
+        set_data = parser.parse_command_conditions(matching.group(2))
+        where_data = parser.parse_command_conditions(matching.group(4))
         updated_rows_ids: list[int] = self._core.update(
             table_name,
-            set_column_name,
-            set_value,
-            where_column_name,
-            where_value
+            set_data,
+            where_data
         )
         for row_id in updated_rows_ids:
             print(
@@ -264,17 +260,12 @@ class Engine:
         :return: None.
         """
         matching = parser.match_command_data(
-            r"^from (\w+) where (\w+) ?= ?([\w\"]+)$",
+            r"^from (\w+) where (\w+ ?= ?[\w\"]+)$",
             command_data
         )
         table_name = matching.group(1)
-        where_column_name = matching.group(2)
-        where_value = self._check_value(matching.group(3))
-        deleted_rows_ids: list[int] = self._core.delete(
-            table_name,
-            where_column_name,
-            where_value
-        )
+        where = parser.parse_command_conditions(matching.group(2))
+        deleted_rows_ids: list[int] = self._core.delete(table_name, where)
         for row_id in deleted_rows_ids:
             print(
                 f"Запись с ID={row_id} удалена из таблицы \"{table_name}\""
@@ -294,31 +285,6 @@ class Engine:
             f"Столбцы: {columns}\n"
             f"Количество записей: {len(table.rows)}"
         )
-
-
-    @staticmethod
-    def _check_value(value: str) -> Any:
-        """
-        Проверка значения для команд insert и update.
-
-        :param value: значение.
-        :return: проверенное значение.
-
-        :raises ValueError: если значение не соответствует формату.
-        """
-        value = value.strip()
-        if match(r"^[+-]?\d+(\.\d+)?$", value):
-            return value
-
-        if value in ("true", "false"):
-            return value
-
-        quoted_match = match(r"^\"(.*)\"$", value) \
-                       or match(r"^'(.*)'$", value)
-        if quoted_match:
-            return quoted_match.group(1)
-
-        raise ValueError(f"неверный формат значения ({value})")
 
 
     @staticmethod

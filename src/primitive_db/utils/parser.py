@@ -1,4 +1,5 @@
 from re import match, Match
+from typing import Any
 
 
 class ParserError(Exception):
@@ -25,18 +26,44 @@ def match_command_data(regex: str, command_data: str) -> Match:
     return matching
 
 
-def parse_command_conditions(conditions_str: str) -> dict:
+def parse_command_conditions(conditions_str: str) -> dict[str, Any]:
     """
-    Парсинг условий команды.
+    Парсинг условий команды вида "column1 = value1, column2 = value2".
 
     :param conditions_str: строка с условиями.
     :return: словарь с условиями вида {колонка: значение}
 
     :raises MatchError: если строка с условиями не соответствуют формату.
+
+    :raises ValueError: если значение не соответствует формату.
     """
     data = {}
     conditions = [c.strip() for c in conditions_str.split(",")]
     for c in conditions:
         matching = match_command_data(r"(\w+) ?= ?([\w\"]+)", c)
-        data[matching.group(1)] = matching.group(2)
+        data[matching.group(1)] = check_value(matching.group(2))
     return data
+
+
+def check_value(value: str) -> Any:
+    """
+    Проверка значения для команд insert и update.
+
+    :param value: значение.
+    :return: проверенное значение.
+
+    :raises ValueError: если значение не соответствует формату.
+    """
+    value = value.strip()
+    if match(r"^[+-]?\d+(\.\d+)?$", value):
+        return value
+
+    if value in ("true", "false"):
+        return value
+
+    quoted_match = match(r"^\"(.*)\"$", value) \
+                   or match(r"^'(.*)'$", value)
+    if quoted_match:
+        return quoted_match.group(1)
+
+    raise ValueError(f"неверный формат значения ({value})")
