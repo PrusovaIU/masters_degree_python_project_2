@@ -123,3 +123,44 @@ make project CONFIG_DIR=<путь до файла конфигурации>
 </table>
 
 [![asciicast](https://asciinema.org/a/4CZm5TzJDEtwJXGtm9nL4r3bj.svg)](https://asciinema.org/a/4CZm5TzJDEtwJXGtm9nL4r3bj)
+
+## CRUD-операции
+
+### Команды:
+
+<table>
+    <tr>
+        <th>Команда</th>
+        <th>Формат</th>
+        <th>Описание</th>
+    </tr>
+    <tr>
+        <td>insert</td>
+        <td>
+            insert into <имя_таблицы> values (<значение1>, <значение2>, ...)
+        </td>
+        <td>создать запись</td>
+    </tr>
+    <tr>
+        <td>select</td>
+        <td>select from <имя_таблицы>[ where <столбец> = <значение>]</td>
+        <td>прочитать записи</td>
+    </tr>
+    <tr>
+        <td>update</td>
+        <td>
+            update <имя_таблицы> set <столбец1> = <новое_значение1> where <столбец_условия> = <значение_условия>
+        </td>
+        <td>обновить запись</td>
+    </tr>
+    <tr>
+        <td>delete</td>
+        <td>delete from <имя_таблицы> where <столбец> = <значение></td>
+        <td>удалить записи</td>
+    </tr>
+    <tr>
+        <td>info</td>
+        <td>info <имя_таблицы></td>
+        <td>вывести информацию о таблице</td>
+    </tr>
+</table>
