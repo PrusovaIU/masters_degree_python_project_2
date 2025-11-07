@@ -1,3 +1,5 @@
+from typing import Any
+
 from .db_object import Model, Field, ValidationError
 from .validator import field_validator
 from src.primitive_db.const.columns_type import ColumnsType
@@ -40,4 +42,24 @@ class Column(Model):
     @property
     def python_type(self) -> type:
         return self._python_type
+
+    def validate_value(self, value: Any) -> _python_type:
+        """
+        Приведение значения к типу колонки.
+
+        :param value: значение.
+        :return: значение, приведенное к типу колонки.
+
+        :raises ValueError: если значение не может быть приведено к типу
+            колонки.
+        """
+        if self._python_type is bool:
+            match value:
+                case "true" | "True" | True | 1:
+                    return True
+                case "false" | "False" | False | 0:
+                    return False
+                case _:
+                    raise ValueError("неверное значение для типа bool")
+        return self._python_type(value)
 

@@ -1,10 +1,11 @@
 from pathlib import Path
+from typing import Optional
 
 from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
-from src.primitive_db.utils.metadata import save_metadata, load_metadata
-from src.primitive_db.conf import CONFIG
+from src.primitive_db.utils.load_data import save_data, load_data
 from src.primitive_db.const.columns_type import ColumnsType
+from src.primitive_db.const.auto_column_names import AutoColumnNames
 
 
 class Core:
@@ -13,9 +14,12 @@ class Core:
 
     :param metadata_path: путь к файлу с метаданными.
     """
-    def __init__(self, metadata_path: Path):
-        self._metadata_path = metadata_path
-        self._database_meta = self._get_database_meta(metadata_path)
+    def __init__(self, database_path: Path):
+        self._database_path = database_path
+        self._database_meta_path = database_path / "metadata.json"
+        self._database = self._get_database_meta(self._database_meta_path)
+        for table in self._database.tables:
+            self._get_table_data(table)
 
     @staticmethod
     def _get_database_meta(metadata_path: Path) -> Database:
@@ -26,13 +30,43 @@ class Core:
         :return: описание базы данных.
         """
         if metadata_path.exists():
-            metadata: dict = load_metadata(metadata_path)
+            metadata: dict = load_data(metadata_path)
             database = Database(**metadata)
         else:
             database_name: str = metadata_path.name.split(".")[0]
             database = Database(database_name)
-            save_metadata(metadata_path, database.dumps())
+            save_data(metadata_path, database.dumps())
         return database
+
+    def _get_table_data(self, table: Table) -> None:
+        """
+        Получение данных таблицы из файла.
+        Если файл с данными таблицы существует, то данные считываются из него.
+        Иначе, создается пустой список для данных таблицы и сохраняется в
+        новом файле.
+
+        :param table: описание таблицы.
+        :return: None.
+        """
+        path: Path = self._table_file_path(table.name)
+        if path.exists():
+            table.rows = load_data(path)
+        else:
+            table.rows = []
+            save_data(path, table.rows)
+
+    def _table_file_path(self, table_name: str) -> Path:
+        """
+        :param table_name: название таблицы.
+        :return: путь к файлу с данными таблицы.
+        """
+        return self._database_path / f"table_{table_name}.json"
+
+    def _table_names(self) -> list[str]:
+        """
+        :return: список имен таблиц, существующих в базе данных.
+        """
+        return [table.name for table in self._database.tables]
 
     def create_table(
             self,
@@ -60,18 +94,19 @@ class Core:
         ]
         column_objs.insert(
             0,
-            Column("ID", type=ColumnsType.int.value)
+            Column(AutoColumnNames.ID.value, type=ColumnsType.int.value)
         )
         table = Table(table_name, columns=column_objs)
-        self._database_meta.add_table(table)
-        save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
+        self._database.add_table(table)
+        save_data(self._database_meta_path, self._database.dumps())
+        self._get_table_data(table)
         return table
 
     def list_tables(self) -> list[Table]:
         """
         :return: список таблиц базы данных.
         """
-        return self._database_meta.tables
+        return self._database.tables
 
     def drop_table(self, table_name: str) -> None:
         """
@@ -88,5 +123,119 @@ class Core:
         :raises utils.metadata.MetadataError: если не удалось сохранить
             метаданные.
         """
-        self._database_meta.drop_table(table_name)
-        save_metadata(CONFIG.db_metadata_path, self._database_meta.dumps())
+        self._database.drop_table(table_name)
+        save_data(self._database_meta_path, self._database.dumps())
+
+    def insert(self, table_name: str, values: list) -> int:
+        """
+        Обработка команды вставки данных в таблицу.
+
+        :param table_name: название таблицы.
+        :param values: значения колонок.
+        :return: ID добавленной строки.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось добавить строку.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
+        """
+        table: Table = self._database.get_table(table_name)
+        columns: list[Column] = [
+            c for c in table.columns if c.name != AutoColumnNames.ID.value
+        ]
+        if len(values) != len(columns):
+            raise ValueError(
+                "Количество значений не совпадает с количеством колонок."
+            )
+        values = {
+            column.name: value for column, value in zip(columns, values)
+        }
+        row_id: int = table.add_row(values)
+        save_data(self._table_file_path(table_name), table.rows)
+        return row_id
+
+    def select(
+            self,
+            table_name: str,
+            column: Optional[str],
+            value: Optional[str]
+    ) -> list[list]:
+        """
+        Получение данных из таблицы.
+
+        :param table_name: имя таблицы.
+        :param column: колонка, по которой фильтруются данные.
+        :param value: значение колонки для фильтрации.
+        :return: список данных. Первая строка - заголовки колонок.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось получить данные из таблицы.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
+        """
+        table: Table = self._database.get_table(table_name)
+        rows = [[c.name for c in table.columns]]
+        for row in table.select(column, value):
+            rows.append(list(row.values()))
+        return rows
+
+    def update(
+            self,
+            table_name: str,
+            set_column: str,
+            set_value: str,
+            where_column: str,
+            where_value: str
+    ) -> list[int]:
+        """
+        Обновление данных в таблице.
+
+        :param table_name: название таблицы.
+        :param set_column: название колонки, значение которой нужно изменить.
+        :param set_value: новое значение колонки.
+        :param where_column: название колонки, по которой фильтруем данные.
+        :param where_value: значение колонки для фильтрации.
+        :return: список ID обновленных строк.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось обновить строки.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
+        """
+        table: Table = self._database.get_table(table_name)
+        updated_rows_ids: list[int] = table.update_row(
+            set_column, set_value, where_column, where_value
+        )
+        save_data(self._table_file_path(table_name), table.rows)
+        return updated_rows_ids
+
+    def delete(
+            self,
+            table_name: str,
+            where_column: str,
+            where_value: str
+    ) -> list[int]:
+        """
+        Удаление данных из таблицы.
+
+        :param table_name: название таблицы.
+        :param where_column: название колонки, по которой фильтруем данные.
+        :param where_value: значение колонки для фильтрации.
+        :return: список ID удаленных строк.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось добавить строку.
+
+        :raises ValueError: если переданные значения не соответствуют
+            требуемому формату.
+        """
+        table: Table = self._database.get_table(table_name)
+        deleted_rows_ids: list[int] = table.delete_row(
+            where_column,
+            where_value
+        )
+        save_data(self._table_file_path(table_name), table.rows)
+        return deleted_rows_ids

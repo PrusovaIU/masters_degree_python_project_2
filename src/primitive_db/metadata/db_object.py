@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import TypeVar, Type, Any, ParamSpec
 from typing import get_origin, get_args
 from .validator import FieldValidator, FieldValidatorType
+from re import match
 
 
 class DatabaseError(Exception):
@@ -88,6 +89,8 @@ class Model:
     :param kwargs: параметры объекта.
     """
     def __init__(self, name, **kwargs):
+        if not match(r"^\w+$", name):
+            raise ValidationError(f"Некорректное имя объекта: {name}")
         self.name = name
         self._parse_kwargs(kwargs)
 

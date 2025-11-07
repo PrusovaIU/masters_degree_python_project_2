@@ -6,7 +6,8 @@ from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.metadata import DatabaseError, Table
 from re import match, findall, Match
-from typing import ClassVar
+from typing import ClassVar, Any, Optional
+from prettytable import PrettyTable
 
 
 class CommandError(Exception):
@@ -50,7 +51,7 @@ class Engine:
     Движок для взаимодействия с пользователем.
     """
     def __init__(self):
-        self._core = Core(CONFIG.db_metadata_path)
+        self._core = Core(CONFIG.database_path)
         self._exit_flag = False
         self._handlers: dict[Commands, Callable[[str], None]] = {
             command: getattr(self, f"_{command.value}")
@@ -120,9 +121,10 @@ class Engine:
         :raises CommandError: если аргументы команды не соответствуют
             требуемому формату.
         """
-        cd_match = match(r"^(\w+) ((\w+ ?: ?\w+ ?)+)$", command_data)
-        if not cd_match:
-            raise CommandSyntaxError("Неверный формат команды")
+        cd_match = self._match_command_data(
+            r"^(\w+) ((\w+ ?: ?\w+ ?)+)$",
+            command_data
+        )
         table_name: str = cd_match.group(1)
         fields: str = cd_match.group(2)
         columns = self._create_table_handle_columns_list(fields)
@@ -154,7 +156,10 @@ class Engine:
         """
         lines = []
         for table in self._core.list_tables():
-            lines.append(f"\t- {table.name}")
+            columns = ", ".join(
+                [f"{c.name}: {c.column_type}" for c in table.columns]
+            )
+            lines.append(f"\t- {table.name} ({columns})")
         if lines:
             data = "\n".join(lines)
         else:
@@ -177,13 +182,174 @@ class Engine:
         :raises utils.metadata.MetadataError: если не удалось сохранить
             метаданные.
         """
-        cd_match = match(r"^(\w+)$", command_data)
-        if not cd_match:
-            raise CommandSyntaxError("Неверный формат команды")
+        cd_match = self._match_command_data(r"^(\w+)$", command_data)
         self._core.drop_table(command_data)
         print(
             f"Таблица \"{command_data}\" успешно удалена"
         )
+
+    def _insert(self, command_data: str) -> None:
+        """
+        Обработчик команды insert.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось добавить строку.
+
+        :raises ValueError: если введены некорректные значения.
+        """
+        matching = self._match_command_data(
+            r"^into (\w+) values \(([\w\", ]+)\)$",
+            command_data
+        )
+        table_name = matching.group(1)
+        values = [el.strip() for el in matching.group(2).split(",")]
+        for i, value in enumerate(values):
+            values[i] = self._check_value(value)
+        row_id: int = self._core.insert(table_name, values)
+        print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
+
+    def _select(self, command_data: str) -> None:
+        """
+        Обработчик команды select.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось получить строки.
+
+        :raises ValueError: если введены некорректные значения.
+        """
+        matching = self._match_command_data(
+            r"^from (\w+) ?(where ((\w+) ?= ?([\w\"]+)))?$",
+            command_data
+        )
+        table_name: str = matching.group(1)
+        column_name: Optional[str] = matching.group(4)
+        value: Optional[str] = matching.group(5)
+        if value is not None:
+            value = self._check_value(value)
+        rows = self._core.select(table_name, column_name, value)
+        pretty_table = PrettyTable(field_names=rows[0])
+        pretty_table.add_rows(rows[1:])
+        print(pretty_table)
+
+    def _update(self, command_data: str) -> None:
+        """
+        Обработчик команды update.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось обновить строки.
+
+        :raises ValueError: если введены некорректные значения.
+        """
+        matching = self._match_command_data(
+            r"^(\w+) set (\w+) ?= ?([\w\"]+) where (\w+) ?= ?([\w\"]+)$",
+            command_data
+        )
+        table_name = matching.group(1)
+        set_column_name = matching.group(2)
+        set_value = self._check_value(matching.group(3))
+        where_column_name = matching.group(4)
+        where_value = self._check_value(matching.group(5))
+        updated_rows_ids: list[int] = self._core.update(
+            table_name,
+            set_column_name,
+            set_value,
+            where_column_name,
+            where_value
+        )
+        for row_id in updated_rows_ids:
+            print(
+                f"Запись с ID={row_id} обновлена в таблице \"{table_name}\""
+            )
+
+    def _delete(self, command_data: str) -> None:
+        """
+        Обработчик команды delete.
+
+        :param command_data: аргументы команды.
+        :return: None.
+
+        :raises CommandError: если аргументы команды не соответствуют
+            требуемому формату.
+
+        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
+            удалось обновить строки.
+
+        :raises ValueError: если введены некорректные значения.
+        """
+        matching = self._match_command_data(
+            r"^from (\w+) where (\w+) ?= ?([\w\"]+)$",
+            command_data
+        )
+        table_name = matching.group(1)
+        where_column_name = matching.group(2)
+        where_value = self._check_value(matching.group(3))
+        deleted_rows_ids: list[int] = self._core.delete(
+            table_name,
+            where_column_name,
+            where_value
+        )
+        for row_id in deleted_rows_ids:
+            print(
+                f"Запись с ID={row_id} удалена из таблицы \"{table_name}\""
+            )
+
+    @staticmethod
+    def _check_value(value: str) -> Any:
+        """
+        Проверка значения для команд insert и update.
+
+        :param value: значение.
+        :return: проверенное значение.
+
+        :raises ValueError: если значение не соответствует формату.
+        """
+        value = value.strip()
+        if match(r"^[+-]?\d+(\.\d+)?$", value):
+            return value
+
+        if value in ("true", "false"):
+            return value
+
+        quoted_match = match(r"^\"(.*)\"$", value) \
+                       or match(r"^'(.*)'$", value)
+        if quoted_match:
+            return quoted_match.group(1)
+
+        raise ValueError(f"Неверный формат значения ({value})")
+
+    @staticmethod
+    def _match_command_data(regex: str, command_data: str) -> Match:
+        """
+        Проверка формата аргументов команды.
+
+        :param regex: регулярное выражение.
+        :param command_data: аргументы команды.
+        :return: объект Match, если аргументы соответствуют формату.
+
+        :raises CommandSyntaxError: если аргументы не соответствуют формату.
+        """
+        matching = match(regex, command_data)
+        if not matching:
+            raise CommandSyntaxError("Неверный формат команды")
+        return matching
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:

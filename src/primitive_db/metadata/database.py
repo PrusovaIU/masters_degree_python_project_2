@@ -75,3 +75,12 @@ class Database(Model):
             raise DatabaseObjectNotFoundError(
                 f"Таблица \"{table_name}\" не найдена"
             )
+
+    def get_table(self, table_name: str) -> Table:
+        tables = [t for t in self.tables if t.name == table_name]
+        try:
+            return tables[0]
+        except IndexError:
+            raise DatabaseObjectNotFoundError(
+                f"Таблица \"{table_name}\" не найдена"
+            )
