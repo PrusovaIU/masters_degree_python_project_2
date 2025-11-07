@@ -1,5 +1,6 @@
 from re import match, Match
 from typing import Any
+from src.primitive_db.utils.cache import create_cacher
 
 
 class ParserError(Exception):
@@ -10,6 +11,7 @@ class MatchError(ParserError):
     pass
 
 
+@create_cacher()
 def match_command_data(regex: str, command_data: str) -> Match:
     """
     Выполняет сопоставление строки с регулярным выражением.
@@ -26,6 +28,7 @@ def match_command_data(regex: str, command_data: str) -> Match:
     return matching
 
 
+@create_cacher()
 def parse_command_conditions(conditions_str: str) -> dict[str, Any]:
     """
     Парсит строку условий команды (например, WHERE или SET) в словарь.
@@ -54,6 +57,7 @@ def parse_command_conditions(conditions_str: str) -> dict[str, Any]:
     return data
 
 
+@create_cacher()
 def check_value(value: str) -> Any:
     """
     Проверяет и преобразует строку в соответствующее значение:
