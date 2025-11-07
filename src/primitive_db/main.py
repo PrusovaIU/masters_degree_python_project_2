@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 from engine import Engine
-from src.primitive_db.metadata import Database, Column
 from pathlib import Path
-from loguru import logger
-from src.primitive_db.core import Core
 from src.primitive_db.conf import CONFIG
+import argparse
 
 
 if __name__ == "__main__":
-    CONFIG.load(Path("/home/hex/git/masters_degree_python_project_2/src/conf.json"))
-    engine = Engine()
-    engine.run()
+    parser = argparse.ArgumentParser(description="Primitive DB")
+    parser.add_argument(
+        "-c", "--config",
+        type=str,
+        dest="config",
+        help="Путь файла конфигурации .json"
+    )
+    args = parser.parse_args()
 
+    CONFIG.load(Path(args.config))
+
+    engine = Engine(CONFIG.database_path)
+    try:
+        engine.run()
+    except KeyboardInterrupt:
+        print("Завершение работы...")

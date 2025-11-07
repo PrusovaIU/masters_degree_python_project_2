@@ -10,7 +10,6 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.10"
 prompt = "^0.4.1"
-loguru = "^0.7.3"
 prettytable = "^3.16.0"
 
 [tool.poetry.dev-dependencies]

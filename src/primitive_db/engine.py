@@ -1,8 +1,8 @@
 from collections.abc import Callable
+from pathlib import Path
 
 import prompt
 from src.primitive_db.core import Core
-from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.exceptions.command_error import CommandError, \
     UnknownCommandError
@@ -51,8 +51,8 @@ class Engine:
     """
     Движок для взаимодействия с пользователем.
     """
-    def __init__(self):
-        self._core = Core(CONFIG.database_path)
+    def __init__(self, database_path: Path):
+        self._core = Core(database_path)
         self._exit_flag = False
         self._handlers: dict[Commands, Callable[[str], None]] = {
             command: getattr(self, f"_{command.value}")
