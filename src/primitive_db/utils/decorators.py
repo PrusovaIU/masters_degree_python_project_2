@@ -1,3 +1,4 @@
+import time
 from collections.abc import Callable
 from src.primitive_db.metadata.db_object import DatabaseError
 from .load_data import SaveDataError
@@ -43,3 +44,17 @@ def confirm_action(action_name: str) -> Callable:
                 raise CancelledError(f"Операция \"{action_name}\" отменена.")
         return wrapper
     return decorator
+
+
+def log_time(func: Callable) -> Callable:
+    """Обертка для логирования времени выполнения функции"""
+    def wrapper(*args, **kwargs):
+        start_time = time.monotonic()
+        result = func(*args, **kwargs)
+        end_time = time.monotonic()
+        print(
+            f"Функция {func.__name__} выполнилась за "
+            f"{end_time-start_time:.3f} секунд."
+        )
+        return result
+    return wrapper

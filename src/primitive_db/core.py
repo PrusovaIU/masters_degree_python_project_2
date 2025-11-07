@@ -6,7 +6,7 @@ from src.primitive_db.metadata.column import Column
 from src.primitive_db.utils.load_data import save_data, load_data
 from src.primitive_db.const.columns_type import ColumnsType
 from src.primitive_db.const.auto_column_names import AutoColumnNames
-from src.primitive_db.utils.decorators import confirm_action
+from src.primitive_db.utils.decorators import confirm_action, log_time
 
 
 class Core:
@@ -131,6 +131,7 @@ class Core:
         self._database.drop_table(table_name)
         save_data(self._database_meta_path, self._database.dumps())
 
+    @log_time
     def insert(self, table_name: str, values: list) -> int:
         """
         Обработка команды вставки данных в таблицу.
@@ -160,11 +161,12 @@ class Core:
         save_data(self._table_file_path(table_name), table.rows)
         return row_id
 
+    @log_time
     def select(
             self,
             table_name: str,
             where: Optional[dict[str, Any]]
-) -> list[list]:
+    ) -> list[list]:
         """
         Получение данных из таблицы.
 
