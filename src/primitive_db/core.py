@@ -80,7 +80,7 @@ class Core:
         """
         Обработка команды создания таблицы.
 
-        :param database: описание базы данных.
+        :param database1: описание базы данных.
         :param table_name: имя таблицы.
         :param columns: список с описанием колонок вида [имя, тип].
 
@@ -117,7 +117,7 @@ class Core:
         """
         Обработка команды удаления таблицы.
 
-        :param database: описание базы данных.
+        :param database1: описание базы данных.
         :param table_name: имя таблицы.
 
         :return: None.

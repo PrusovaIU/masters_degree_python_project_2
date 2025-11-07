@@ -121,3 +121,5 @@ make project CONFIG_DIR=<путь до файла конфигурации>
         <td>удалить таблицу</td>
     </tr>
 </table>
+
+[![asciicast](https://asciinema.org/a/4CZm5TzJDEtwJXGtm9nL4r3bj.svg)](https://asciinema.org/a/4CZm5TzJDEtwJXGtm9nL4r3bj)
