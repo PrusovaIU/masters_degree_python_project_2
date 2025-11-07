@@ -23,3 +23,20 @@ def match_command_data(regex: str, command_data: str) -> Match:
     if not matching:
         raise MatchError("неверный формат команды")
     return matching
+
+
+def parse_command_conditions(conditions_str: str) -> dict:
+    """
+    Парсинг условий команды.
+
+    :param conditions_str: строка с условиями.
+    :return: словарь с условиями вида {колонка: значение}
+
+    :raises MatchError: если строка с условиями не соответствуют формату.
+    """
+    data = {}
+    conditions = [c.strip() for c in conditions_str.split(",")]
+    for c in conditions:
+        matching = match_command_data(r"(\w+) ?= ?([\w\"]+)", c)
+        data[matching.group(1)] = matching.group(2)
+    return data
