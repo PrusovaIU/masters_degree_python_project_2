@@ -1,6 +1,4 @@
 from enum import Enum
-from io import DEFAULT_BUFFER_SIZE
-from zlib import DEF_BUF_SIZE
 
 
 class Commands(Enum):

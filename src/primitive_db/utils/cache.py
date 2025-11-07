@@ -11,6 +11,7 @@ def create_cacher(size: int = 10) -> Callable:
     :param size: размер кэша.
     """
     cache = {}
+
     def decorator(func: Callable) -> Callable:
         def cache_result(*args, **kwargs):
             key = (args, tuple(kwargs.items()))

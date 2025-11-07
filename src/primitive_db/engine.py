@@ -1,18 +1,21 @@
 from collections.abc import Callable
 from pathlib import Path
+from re import Match, findall
+from typing import Any, ClassVar, Optional
 
 import prompt
-from src.primitive_db.core import Core
-from src.primitive_db.const.commands import Commands, COMMANDS_HELP
-from src.primitive_db.exceptions.command_error import CommandError, \
-    UnknownCommandError
-from src.primitive_db.metadata import Table
-from re import match, findall, Match
-from typing import ClassVar, Any, Optional
 from prettytable import PrettyTable
-from src.primitive_db.utils.decorators import handle_db_errors
+
+from src.primitive_db.const.commands import COMMANDS_HELP, Commands
+from src.primitive_db.core import Core
 from src.primitive_db.exceptions.cancelled_error import CancelledError
+from src.primitive_db.exceptions.command_error import (
+    CommandError,
+    UnknownCommandError,
+)
+from src.primitive_db.metadata import Table
 from src.primitive_db.utils import parser
+from src.primitive_db.utils.decorators import handle_db_errors
 
 CommandDataType = str | None
 HandlerType = Callable[[ClassVar], None]
@@ -286,7 +289,6 @@ class Engine:
             f"Количество записей: {len(table.rows)}"
         )
 
-
     @staticmethod
     def _input_command() -> tuple[Commands, str]:
         """
@@ -327,4 +329,3 @@ class Engine:
                 print("Команда не найдена")
             except Exception as err:
                 print(f"Ошибка: {err}")
-

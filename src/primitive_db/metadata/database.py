@@ -1,8 +1,8 @@
 from src.primitive_db.utils.duplicates import get_duplicates
 
-from .db_object import Model, Field, DatabaseError, ValidationError
-from .validator import field_validator
+from .db_object import DatabaseError, Field, Model, ValidationError
 from .table import Table
+from .validator import field_validator
 
 
 class DatabaseObjectExistsError(DatabaseError):

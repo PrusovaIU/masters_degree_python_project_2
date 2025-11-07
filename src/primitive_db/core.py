@@ -1,12 +1,12 @@
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
+from src.primitive_db.const.auto_column_names import AutoColumnNames
+from src.primitive_db.const.columns_type import ColumnsType
 from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
-from src.primitive_db.utils.load_data import save_data, load_data
-from src.primitive_db.const.columns_type import ColumnsType
-from src.primitive_db.const.auto_column_names import AutoColumnNames
 from src.primitive_db.utils.decorators import confirm_action, log_time
+from src.primitive_db.utils.load_data import load_data, save_data
 
 
 class Core:

@@ -2,6 +2,7 @@ from enum import Enum
 from json import load
 from pathlib import Path
 
+
 class LoadConfigError(Exception):
     pass
 

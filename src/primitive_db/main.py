@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-from engine import Engine
-from pathlib import Path
-from src.primitive_db.conf import CONFIG
 import argparse
+from pathlib import Path
 
+from engine import Engine
+
+from src.primitive_db.conf import CONFIG
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Primitive DB")

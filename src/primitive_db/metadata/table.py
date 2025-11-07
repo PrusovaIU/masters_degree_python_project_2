@@ -1,10 +1,11 @@
 from typing import Any, Optional
 
-from .db_object import DatabaseError, Model, Field, ValidationError
-from .column import Column
-from .validator import field_validator
-from src.primitive_db.utils.duplicates import get_duplicates
 from src.primitive_db.const.auto_column_names import AutoColumnNames
+from src.primitive_db.utils.duplicates import get_duplicates
+
+from .column import Column
+from .db_object import DatabaseError, Field, Model, ValidationError
+from .validator import field_validator
 
 
 class TableError(DatabaseError):

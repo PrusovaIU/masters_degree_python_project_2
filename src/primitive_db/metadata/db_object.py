@@ -1,8 +1,8 @@
 from collections.abc import Callable
-from typing import TypeVar, Type, Any, ParamSpec
-from typing import get_origin, get_args
-from .validator import FieldValidator, FieldValidatorType
 from re import match
+from typing import Any, ParamSpec, Type, TypeVar, get_args, get_origin
+
+from .validator import FieldValidator, FieldValidatorType
 
 
 class DatabaseError(Exception):
@@ -123,7 +123,6 @@ class Model:
             value = self._get_kwargs_value(key, field, kwargs)
             setattr(self, key, value)
 
-
     def _get_kwargs_value(self, key: str, field: Field, kwargs: dict) -> Any:
         """
         Получение значения параметра из kwargs.
@@ -217,7 +216,6 @@ class Model:
                 )
         return handled_values
 
-
     def _validate(self, value: Any, field_name: str) -> Any:
         """
         Валидация значения параметра.
@@ -270,4 +268,3 @@ class Model:
             return value.dumps()
         else:
             return value
-

@@ -1,12 +1,15 @@
 import time
 from collections.abc import Callable
-from src.primitive_db.metadata.db_object import DatabaseError
-from .load_data import SaveDataError
-from src.primitive_db.exceptions.command_error import CommandError
-import prompt
 from re import Match
-from .parser import ParserError
+
+import prompt
+
 from src.primitive_db.exceptions.cancelled_error import CancelledError
+from src.primitive_db.exceptions.command_error import CommandError
+from src.primitive_db.metadata.db_object import DatabaseError
+
+from .load_data import SaveDataError
+from .parser import ParserError
 
 
 def handle_db_errors(func: Callable) -> Callable:

@@ -1,5 +1,6 @@
-from re import match, Match
+from re import Match, match
 from typing import Any
+
 from src.primitive_db.utils.cache import create_cacher
 
 
@@ -79,8 +80,10 @@ def check_value(value: str) -> Any:
     if value in ("true", "false"):
         return value
 
-    quoted_match = match(r"^\"(.*)\"$", value) \
-                   or match(r"^'(.*)'$", value)
+    quoted_match = (
+        match(r"^\"(.*)\"$", value)
+        or match(r"^'(.*)'$", value)
+    )
     if quoted_match:
         return quoted_match.group(1)
 
