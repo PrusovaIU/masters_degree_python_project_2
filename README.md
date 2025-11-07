@@ -164,3 +164,5 @@ make project CONFIG_DIR=<путь до файла конфигурации>
         <td>вывести информацию о таблице</td>
     </tr>
 </table>
+
+[![asciicast](https://asciinema.org/a/hLTFOjr9IiiByHXKDemf6aeaR.svg)](https://asciinema.org/a/hLTFOjr9IiiByHXKDemf6aeaR)
