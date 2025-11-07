@@ -272,6 +272,22 @@ class Engine:
                 f"Запись с ID={row_id} удалена из таблицы \"{table_name}\""
             )
 
+    @handle_db_errors
+    @handler
+    def _info(self, command_data: str) -> None:
+        matching = self._match_command_data(r"^(\w+)$", command_data)
+        table_name = matching.group(1)
+        table = self._core.get_table(table_name)
+        columns = ", ".join(
+            [f"{c.name}:{c.column_type}" for c in table.columns]
+        )
+        print(
+            f"Таблица: {table.name}\n"
+            f"Столбцы: {columns}\n"
+            f"Количество записей: {len(table.rows)}"
+        )
+
+
     @staticmethod
     def _check_value(value: str) -> Any:
         """

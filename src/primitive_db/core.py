@@ -248,3 +248,6 @@ class Core:
         )
         save_data(self._table_file_path(table_name), table.rows)
         return deleted_rows_ids
+
+    def get_table(self, table_name: str) -> Table:
+        return self._database.get_table(table_name)
