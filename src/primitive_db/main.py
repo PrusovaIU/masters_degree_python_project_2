@@ -2,11 +2,12 @@
 import argparse
 from pathlib import Path
 
-from engine import Engine
+from src.primitive_db.engine import Engine
 
 from src.primitive_db.conf import CONFIG
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(description="Primitive DB")
     parser.add_argument(
         "-c", "--config",
@@ -17,9 +18,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     CONFIG.load(Path(args.config))
+    # CONFIG.load(Path("/home/hex/git/masters_degree_python_project_2/src/conf.json"))
 
     engine = Engine(CONFIG.database_path)
     try:
         engine.run()
     except KeyboardInterrupt:
         print("Завершение работы...")
+
+
+if __name__ == "__main__":
+    main()
