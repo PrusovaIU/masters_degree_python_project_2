@@ -4,26 +4,13 @@ import prompt
 from src.primitive_db.core import Core
 from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
-from src.primitive_db.metadata import DatabaseError, Table
+from src.primitive_db.exceptions.command_error import CommandError, \
+    UnknownCommandError, CommandSyntaxError
+from src.primitive_db.metadata import Table
 from re import match, findall, Match
 from typing import ClassVar, Any, Optional
 from prettytable import PrettyTable
-
-
-class CommandError(Exception):
-    """
-    Тип исключения, возникающего при получении некорректной команды
-    """
-    pass
-
-
-class UnknownCommandError(CommandError):
-    pass
-
-
-class CommandSyntaxError(CommandError):
-    pass
-
+from src.primitive_db.utils.decorators import handle_db_errors
 
 CommandDataType = str | None
 HandlerType = Callable[[ClassVar], None]
@@ -40,9 +27,21 @@ def simple_handler(func: HandlerType) -> HandlerType:
     """
     def wrapper(self, command_data: CommandDataType = None) -> None:
         if command_data:
-            raise CommandError("Команда не принимает аргументов")
+            raise CommandError("команда не принимает аргументов")
         else:
             func(self)
+    return wrapper
+
+
+def handler(func: HandlerType) -> HandlerType:
+    """
+    Декоратор для обработчиков команд, которые принимают аргументы.
+    """
+    def wrapper(self, command_data: CommandDataType) -> None:
+        if command_data:
+            func(self, command_data)
+        else:
+            raise CommandError("не переданы аргументы команды")
     return wrapper
 
 
@@ -81,21 +80,14 @@ class Engine:
         if to_exit.string == "y":
             self._exit_flag = True
 
+    @handle_db_errors
+    @handler
     def _create_table(self, command_data: str) -> None:
         """
         Обработчик команды create_table.
 
         :param command_data: аргументы команды.
         :return: None.
-
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
-
-        :raises metadata.db_object.DatabaseError: если не удалось удалить
-            таблицу.
-
-        :raises utils.metadata.MetadataError: если не удалось сохранить
-            метаданные.
         """
         table_name, columns = self._create_table_handle_cd(command_data)
         table: Table = self._core.create_table(table_name, columns)
@@ -166,42 +158,29 @@ class Engine:
             data = "Таблицы отсутствуют"
         print(data)
 
+    @handle_db_errors
+    @handler
     def _drop_table(self, command_data: str) -> None:
         """
         Обработчик команды drop_table.
 
         :param command_data: аргументы команды.
         :return: None.
-
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
-
-        :raises metadata.db_object.DatabaseError: если не удалось удалить
-            таблицу.
-
-        :raises utils.metadata.MetadataError: если не удалось сохранить
-            метаданные.
         """
         cd_match = self._match_command_data(r"^(\w+)$", command_data)
-        self._core.drop_table(command_data)
+        self._core.drop_table(cd_match.group(1))
         print(
             f"Таблица \"{command_data}\" успешно удалена"
         )
 
+    @handle_db_errors
+    @handler
     def _insert(self, command_data: str) -> None:
         """
         Обработчик команды insert.
 
         :param command_data: аргументы команды.
         :return: None.
-
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
-
-        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
-            удалось добавить строку.
-
-        :raises ValueError: если введены некорректные значения.
         """
         matching = self._match_command_data(
             r"^into (\w+) values \(([\w\", ]+)\)$",
@@ -214,20 +193,14 @@ class Engine:
         row_id: int = self._core.insert(table_name, values)
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
+    @handle_db_errors
+    @handler
     def _select(self, command_data: str) -> None:
         """
         Обработчик команды select.
 
         :param command_data: аргументы команды.
         :return: None.
-
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
-
-        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
-            удалось получить строки.
-
-        :raises ValueError: если введены некорректные значения.
         """
         matching = self._match_command_data(
             r"^from (\w+) ?(where ((\w+) ?= ?([\w\"]+)))?$",
@@ -243,20 +216,14 @@ class Engine:
         pretty_table.add_rows(rows[1:])
         print(pretty_table)
 
+    @handle_db_errors
+    @handler
     def _update(self, command_data: str) -> None:
         """
         Обработчик команды update.
 
         :param command_data: аргументы команды.
         :return: None.
-
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
-
-        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
-            удалось обновить строки.
-
-        :raises ValueError: если введены некорректные значения.
         """
         matching = self._match_command_data(
             r"^(\w+) set (\w+) ?= ?([\w\"]+) where (\w+) ?= ?([\w\"]+)$",
@@ -279,20 +246,14 @@ class Engine:
                 f"Запись с ID={row_id} обновлена в таблице \"{table_name}\""
             )
 
+    @handle_db_errors
+    @handler
     def _delete(self, command_data: str) -> None:
         """
         Обработчик команды delete.
 
         :param command_data: аргументы команды.
         :return: None.
-
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
-
-        :raises src.primitive_db.metadata.db_object.DatabaseError: если не
-            удалось обновить строки.
-
-        :raises ValueError: если введены некорректные значения.
         """
         matching = self._match_command_data(
             r"^from (\w+) where (\w+) ?= ?([\w\"]+)$",
@@ -333,7 +294,7 @@ class Engine:
         if quoted_match:
             return quoted_match.group(1)
 
-        raise ValueError(f"Неверный формат значения ({value})")
+        raise ValueError(f"неверный формат значения ({value})")
 
     @staticmethod
     def _match_command_data(regex: str, command_data: str) -> Match:
@@ -348,7 +309,7 @@ class Engine:
         """
         matching = match(regex, command_data)
         if not matching:
-            raise CommandSyntaxError("Неверный формат команды")
+            raise CommandSyntaxError("неверный формат команды")
         return matching
 
     @staticmethod
@@ -369,7 +330,7 @@ class Engine:
         try:
             return Commands(command), command_data
         except ValueError:
-            raise UnknownCommandError("Команда не найдена")
+            raise UnknownCommandError("Неизвестная команда")
 
     def run(self) -> None:
         """

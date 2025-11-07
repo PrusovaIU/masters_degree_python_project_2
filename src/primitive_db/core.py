@@ -47,6 +47,9 @@ class Core:
 
         :param table: описание таблицы.
         :return: None.
+
+        :raises utils.load_data.LoadDataError: если не удалось считать данные
+            таблицы.
         """
         path: Path = self._table_file_path(table.name)
         if path.exists():
@@ -85,7 +88,7 @@ class Core:
         :raises metadata.db_object.DatabaseError: если не удалось создать
             таблицу.
 
-        :raises utils.metadata.MetadataError: если не удалось сохранить
+        :raises utils.load_data.SaveDataError: если не удалось сохранить
             метаданные.
         """
         column_objs = [
@@ -120,7 +123,7 @@ class Core:
         :raises metadata.db_object.DatabaseError: если не удалось удалить
             таблицу.
 
-        :raises utils.metadata.MetadataError: если не удалось сохранить
+        :raises utils.load_data.SaveDataError: если не удалось сохранить
             метаданные.
         """
         self._database.drop_table(table_name)
@@ -204,6 +207,9 @@ class Core:
 
         :raises ValueError: если переданные значения не соответствуют
             требуемому формату.
+
+        :raises utils.load_data.SaveDataError: если не удалось сохранить
+            данные.
         """
         table: Table = self._database.get_table(table_name)
         updated_rows_ids: list[int] = table.update_row(
@@ -231,6 +237,9 @@ class Core:
 
         :raises ValueError: если переданные значения не соответствуют
             требуемому формату.
+
+        :raises utils.load_data.SaveDataError: если не удалось сохранить
+            данные.
         """
         table: Table = self._database.get_table(table_name)
         deleted_rows_ids: list[int] = table.delete_row(
