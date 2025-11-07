@@ -5,13 +5,14 @@ from src.primitive_db.core import Core
 from src.primitive_db.conf import CONFIG
 from src.primitive_db.const.commands import Commands, COMMANDS_HELP
 from src.primitive_db.exceptions.command_error import CommandError, \
-    UnknownCommandError, CommandSyntaxError
+    UnknownCommandError
 from src.primitive_db.metadata import Table
 from re import match, findall, Match
 from typing import ClassVar, Any, Optional
 from prettytable import PrettyTable
 from src.primitive_db.utils.decorators import handle_db_errors
 from src.primitive_db.exceptions.cancelled_error import CancelledError
+from src.primitive_db.utils import parser
 
 CommandDataType = str | None
 HandlerType = Callable[[ClassVar], None]
@@ -111,10 +112,10 @@ class Engine:
         :param command_data: аргументы команды.
         :return: имя таблицы, список столбцов вида [имя столбца, тип столбца].
 
-        :raises CommandError: если аргументы команды не соответствуют
-            требуемому формату.
+        :raises src.primitive_db.utils.parser.ParserError: если аргументы
+            команды не соответствуют требуемому формату.
         """
-        cd_match = self._match_command_data(
+        cd_match = parser.match_command_data(
             r"^(\w+) ((\w+ ?: ?\w+ ?)+)$",
             command_data
         )
@@ -133,6 +134,9 @@ class Engine:
 
         :param columns_str: строка с описанием столбцов.
         :return: None.
+
+        :raises src.primitive_db.utils.parser.ParserError: если аргументы
+            команды не соответствуют требуемому формату.
         """
         columns: list[tuple[str, str]] = []
         for item in findall(r"\w+ ?: ?\w+", columns_str):
@@ -168,7 +172,7 @@ class Engine:
         :param command_data: аргументы команды.
         :return: None.
         """
-        cd_match = self._match_command_data(r"^(\w+)$", command_data)
+        cd_match = parser.match_command_data(r"^(\w+)$", command_data)
         self._core.drop_table(cd_match.group(1))
         print(
             f"Таблица \"{command_data}\" успешно удалена"
@@ -182,15 +186,19 @@ class Engine:
 
         :param command_data: аргументы команды.
         :return: None.
+
+        :raises src.primitive_db.utils.parser.ParserError: если аргументы
+            команды не соответствуют требуемому формату.
         """
-        matching = self._match_command_data(
+        matching = parser.match_command_data(
             r"^into (\w+) values \(([\w\", ]+)\)$",
             command_data
         )
         table_name = matching.group(1)
-        values = [el.strip() for el in matching.group(2).split(",")]
-        for i, value in enumerate(values):
-            values[i] = self._check_value(value)
+        values = [
+            parser.check_value(el.strip())
+            for el in matching.group(2).split(",")
+        ]
         row_id: int = self._core.insert(table_name, values)
         print(f"Запись с ID={row_id} добавлена в таблицу \"{table_name}\"")
 
@@ -203,16 +211,15 @@ class Engine:
         :param command_data: аргументы команды.
         :return: None.
         """
-        matching = self._match_command_data(
+        matching = parser.match_command_data(
             r"^from (\w+) ?(where ((\w+) ?= ?([\w\"]+)))?$",
             command_data
         )
         table_name: str = matching.group(1)
-        column_name: Optional[str] = matching.group(4)
-        value: Optional[str] = matching.group(5)
-        if value is not None:
-            value = self._check_value(value)
-        rows = self._core.select(table_name, column_name, value)
+        where: Optional[str] = matching.group(3)
+        values: dict[str, Any] = parser.parse_command_conditions(where) \
+            if where else {}
+        rows = self._core.select(table_name, values)
         pretty_table = PrettyTable(field_names=rows[0])
         pretty_table.add_rows(rows[1:])
         print(pretty_table)
@@ -226,21 +233,17 @@ class Engine:
         :param command_data: аргументы команды.
         :return: None.
         """
-        matching = self._match_command_data(
-            r"^(\w+) set (\w+) ?= ?([\w\"]+) where (\w+) ?= ?([\w\"]+)$",
+        matching = parser.match_command_data(
+            r"^(\w+) set ((\w+ ?= ?[\w\"]+,? ?)+) where (\w+ ?= ?[\w\"]+)$",
             command_data
         )
         table_name = matching.group(1)
-        set_column_name = matching.group(2)
-        set_value = self._check_value(matching.group(3))
-        where_column_name = matching.group(4)
-        where_value = self._check_value(matching.group(5))
+        set_data = parser.parse_command_conditions(matching.group(2))
+        where_data = parser.parse_command_conditions(matching.group(4))
         updated_rows_ids: list[int] = self._core.update(
             table_name,
-            set_column_name,
-            set_value,
-            where_column_name,
-            where_value
+            set_data,
+            where_data
         )
         for row_id in updated_rows_ids:
             print(
@@ -256,18 +259,13 @@ class Engine:
         :param command_data: аргументы команды.
         :return: None.
         """
-        matching = self._match_command_data(
-            r"^from (\w+) where (\w+) ?= ?([\w\"]+)$",
+        matching = parser.match_command_data(
+            r"^from (\w+) where (\w+ ?= ?[\w\"]+)$",
             command_data
         )
         table_name = matching.group(1)
-        where_column_name = matching.group(2)
-        where_value = self._check_value(matching.group(3))
-        deleted_rows_ids: list[int] = self._core.delete(
-            table_name,
-            where_column_name,
-            where_value
-        )
+        where = parser.parse_command_conditions(matching.group(2))
+        deleted_rows_ids: list[int] = self._core.delete(table_name, where)
         for row_id in deleted_rows_ids:
             print(
                 f"Запись с ID={row_id} удалена из таблицы \"{table_name}\""
@@ -276,7 +274,7 @@ class Engine:
     @handle_db_errors
     @handler
     def _info(self, command_data: str) -> None:
-        matching = self._match_command_data(r"^(\w+)$", command_data)
+        matching = parser.match_command_data(r"^(\w+)$", command_data)
         table_name = matching.group(1)
         table = self._core.get_table(table_name)
         columns = ", ".join(
@@ -288,46 +286,6 @@ class Engine:
             f"Количество записей: {len(table.rows)}"
         )
 
-
-    @staticmethod
-    def _check_value(value: str) -> Any:
-        """
-        Проверка значения для команд insert и update.
-
-        :param value: значение.
-        :return: проверенное значение.
-
-        :raises ValueError: если значение не соответствует формату.
-        """
-        value = value.strip()
-        if match(r"^[+-]?\d+(\.\d+)?$", value):
-            return value
-
-        if value in ("true", "false"):
-            return value
-
-        quoted_match = match(r"^\"(.*)\"$", value) \
-                       or match(r"^'(.*)'$", value)
-        if quoted_match:
-            return quoted_match.group(1)
-
-        raise ValueError(f"неверный формат значения ({value})")
-
-    @staticmethod
-    def _match_command_data(regex: str, command_data: str) -> Match:
-        """
-        Проверка формата аргументов команды.
-
-        :param regex: регулярное выражение.
-        :param command_data: аргументы команды.
-        :return: объект Match, если аргументы соответствуют формату.
-
-        :raises CommandSyntaxError: если аргументы не соответствуют формату.
-        """
-        matching = match(regex, command_data)
-        if not matching:
-            raise CommandSyntaxError("неверный формат команды")
-        return matching
 
     @staticmethod
     def _input_command() -> tuple[Commands, str]:

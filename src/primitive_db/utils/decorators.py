@@ -4,6 +4,7 @@ from .load_data import SaveDataError
 from src.primitive_db.exceptions.command_error import CommandError
 import prompt
 from re import Match
+from .parser import ParserError
 from src.primitive_db.exceptions.cancelled_error import CancelledError
 
 
@@ -12,7 +13,7 @@ def handle_db_errors(func: Callable) -> Callable:
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except ValueError as err:
+        except (ValueError, ParserError) as err:
             print(f"Введены некорректные данные: {err}")
         except DatabaseError as err:
             print(f"Не удалось выполнить операцию: {err}")

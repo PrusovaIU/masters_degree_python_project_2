@@ -114,73 +114,70 @@ class Table(Model):
 
     def select(
             self,
-            column_name: Optional[str],
-            value: Any
+            where: Optional[dict]
     ) -> list[dict]:
         """
         Получить строки таблицы.
 
-        :param column_name: колонка для фильтрации.
-        :param value: значение для фильтрации.
+        :param where: условия фильтрации вида {колонка: значение}.
         :return: список строк таблицы.
 
         :raises ValueError: некорректное данные для фильтрации.
 
         :raises UnknownColumnError: если колонка не найдена.
         """
-        if column_name is None and value is None:
-            # вернуть все строки
+        if not where:
             return self._rows
-        elif column_name is None:
-            raise ValueError("не указано имя колонки для фильтрации")
-        elif value is None:
-            raise ValueError("не указано значение для фильтрации")
         else:
-            # вернуть строки, соответствующие фильтру
-            return self._filter_rows(column_name, value)
+            return self._filter_rows(where)
 
-    def _filter_rows(self, column_name: str, value: Any) -> list[dict]:
+    def _filter_rows(self, conditions: dict) -> list[dict]:
         """
         Фильтрация строк таблицы по значению в колонке.
 
-        :param column_name: название колонки.
-        :param value: значение для фильтрации.
+        :param conditions: словарь условий фильтрации вида {колонка: значение}
         :return: список строк, удовлетворяющих фильтру.
 
         :raises UnknownColumnError: если колонка не найдена.
         """
-        value = self._validate_value(column_name, value)
+        conditions = {
+            key: self._validate_value(key, value)
+            for key, value in conditions.items()
+        }
         return [
             row for row in self._rows
-            if row.get(column_name) == value
+            if all(row.get(col) == val for col, val in conditions.items())
         ]
 
     def update_row(
             self,
-            set_column_name: str,
-            set_value: Any,
-            where_column_name: str,
-            where_value: Any
+            set_data: dict,
+            where_data: dict
     ) -> list[int]:
         """
         Обновить строки таблицы.
 
-        :param set_column_name: название колонки для обновления.
-        :param set_value: значение для обновления.
-        :param where_column_name: название колонки для фильтрации.
-        :param where_value: значение для фильтрации.
+        :param set_data: данные для обновления вида {колонка: значение}.
+        :param where_data: название колонки для обновления.
         :return: список ID обновленных строк.
 
         :raises UnknownColumnError: если колонка не найдена.
 
         :raises ValueError: переданы некорректные данные.
         """
-        set_value = self._validate_value(set_column_name, set_value)
-        where_value = self._validate_value(where_column_name, where_value)
-        updated_rows = self._filter_rows(where_column_name, where_value)
+        validated_set = {
+            col: self._validate_value(col, val)
+            for col, val in set_data.items()
+        }
+        validated_where = {
+            col: self._validate_value(col, val)
+            for col, val in where_data.items()
+        }
+        updated_rows = self._filter_rows(validated_where)
         updated_rows_ids: list[int] = []
         for row in updated_rows:
-            row[set_column_name] = set_value
+            for set_column_name, set_value in validated_set.items():
+                row[set_column_name] = set_value
             updated_rows_ids.append(row[AutoColumnNames.ID.value])
         return updated_rows_ids
 
@@ -201,23 +198,18 @@ class Table(Model):
 
     def delete_row(
             self,
-            where_column_name: str,
-            where_value: Any
+            where: dict
     ) -> list[int]:
         """
         Удалить строки таблицы.
 
-        :param where_column_name: название колонки для фильтрации.
-        :param where_value: значение для фильтрации.
+        :param where: условия фильтрации вида {колонка: значение}.
         :return: список ID удаленных строк.
         """
-        where_value = self._validate_value(where_column_name, where_value)
-        deleted_rows_ids: list[int] = []
-        rows = []
-        for row in self._rows:
-            if row[where_column_name] == where_value:
-                deleted_rows_ids.append(row[AutoColumnNames.ID.value])
-            else:
-                rows.append(row)
-        self._rows = rows
-        return deleted_rows_ids
+        validated_where = {
+            col: self._validate_value(col, val)
+            for col, val in where.items()
+        }
+        deleted_rows = self._filter_rows(validated_where)
+        self._rows = [row for row in self._rows if row not in deleted_rows]
+        return [row[AutoColumnNames.ID.value] for row in deleted_rows]

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from src.primitive_db.metadata import Database, Table
 from src.primitive_db.metadata.column import Column
@@ -163,15 +163,16 @@ class Core:
     def select(
             self,
             table_name: str,
-            column: Optional[str],
-            value: Optional[str]
-    ) -> list[list]:
+            where: Optional[dict[str, Any]]
+) -> list[list]:
         """
         Получение данных из таблицы.
 
         :param table_name: имя таблицы.
-        :param column: колонка, по которой фильтруются данные.
-        :param value: значение колонки для фильтрации.
+
+        :param where: словарь с условиями фильтрации вида
+            {имя колонки: значение}.
+
         :return: список данных. Первая строка - заголовки колонок.
 
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
@@ -182,26 +183,27 @@ class Core:
         """
         table: Table = self._database.get_table(table_name)
         rows = [[c.name for c in table.columns]]
-        for row in table.select(column, value):
+        for row in table.select(where):
             rows.append(list(row.values()))
         return rows
 
     def update(
             self,
             table_name: str,
-            set_column: str,
-            set_value: str,
-            where_column: str,
-            where_value: str
+            set_data: dict[str, Any],
+            where_data: dict[str, Any]
     ) -> list[int]:
         """
         Обновление данных в таблице.
 
         :param table_name: название таблицы.
-        :param set_column: название колонки, значение которой нужно изменить.
-        :param set_value: новое значение колонки.
-        :param where_column: название колонки, по которой фильтруем данные.
-        :param where_value: значение колонки для фильтрации.
+
+        :param set_data: словарь с данными для обновления вида
+            {имя колонки: новое значение}.
+
+        :param where_data: словарь с условиями фильтрации вида
+            {имя колонки: значение}.
+
         :return: список ID обновленных строк.
 
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
@@ -214,9 +216,7 @@ class Core:
             данные.
         """
         table: Table = self._database.get_table(table_name)
-        updated_rows_ids: list[int] = table.update_row(
-            set_column, set_value, where_column, where_value
-        )
+        updated_rows_ids: list[int] = table.update_row(set_data, where_data)
         save_data(self._table_file_path(table_name), table.rows)
         return updated_rows_ids
 
@@ -224,15 +224,16 @@ class Core:
     def delete(
             self,
             table_name: str,
-            where_column: str,
-            where_value: str
+            where: dict[str, Any]
     ) -> list[int]:
         """
         Удаление данных из таблицы.
 
         :param table_name: название таблицы.
-        :param where_column: название колонки, по которой фильтруем данные.
-        :param where_value: значение колонки для фильтрации.
+
+        :param where: словарь с условиями фильтрации вида
+            {имя колонки: значение}.
+
         :return: список ID удаленных строк.
 
         :raises src.primitive_db.metadata.db_object.DatabaseError: если не
@@ -245,10 +246,7 @@ class Core:
             данные.
         """
         table: Table = self._database.get_table(table_name)
-        deleted_rows_ids: list[int] = table.delete_row(
-            where_column,
-            where_value
-        )
+        deleted_rows_ids: list[int] = table.delete_row(where)
         save_data(self._table_file_path(table_name), table.rows)
         return deleted_rows_ids
 
