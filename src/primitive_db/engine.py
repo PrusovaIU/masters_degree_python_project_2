@@ -18,7 +18,9 @@ from src.primitive_db.utils import parser
 from src.primitive_db.utils.decorators import handle_db_errors
 
 CommandDataType = str | None
-HandlerType = Callable[[ClassVar], None]
+HandlerType = (
+        Callable[[object], None] | Callable[[object, CommandDataType], None]
+)
 
 
 def simple_handler(func: HandlerType) -> HandlerType:
